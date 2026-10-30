@@ -38,6 +38,7 @@ How the app reads templates and merges layers like Photoshop.
 What goes into the files that the game reads.
 - [0013](0013-region-map.md) Region map: game names, colour from pixels
 - [0014](0014-levels-per-template.md) Keep the Levels adjustment of each template
+- [0021](0021-project-files.md) Project files: format, validation and unsaved changes
 
 ### Build, test and deploy
 - [0015](0015-windows-build-and-lan-deployment.md) Windows test build from Linux, deployed over SSH

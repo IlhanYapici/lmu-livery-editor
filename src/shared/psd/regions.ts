@@ -4,7 +4,8 @@ import { compositeLayers, type LayerDecoder, type Raster } from './composite'
 // The region map (customskin_region.tga) tells the game which material goes where.
 // Names follow the livery showroom of the game.
 
-export type RegionId = 'base' | 'carbon' | 'option1' | 'option2' | 'stickers'
+export const REGION_IDS = ['base', 'carbon', 'option1', 'option2', 'stickers'] as const
+export type RegionId = (typeof REGION_IDS)[number]
 
 export const REGIONS: { id: RegionId; name: string; rgb: [number, number, number] }[] = [
   { id: 'base', name: 'Base', rgb: [0, 0, 0] },

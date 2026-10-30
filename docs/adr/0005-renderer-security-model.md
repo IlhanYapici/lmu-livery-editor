@@ -8,4 +8,4 @@ The renderer has no access to Node.js: `contextIsolation: true`, `sandbox: true`
 
 ## Consequences
 
-When you add an IPC call, add it to `LmuApi`, the preload script and `ipcMain.handle` together. If the call needs a file, give an ID (for example, a template file name), and let the main process resolve the path.
+When you add an IPC call, add it to `LmuApi`, the preload script and `ipcMain.handle` together. If the call needs a file, give an ID (for example, a template file name), and let the main process resolve the path. For files that the user selects in a dialog, the main process gives the renderer an opaque handle and keeps the path ([ADR-0021](0021-project-files.md)). Check the type of every IPC argument in the main process.

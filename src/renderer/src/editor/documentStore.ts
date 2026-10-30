@@ -8,6 +8,11 @@ export const HISTORY_LIMIT = 100
 
 export type DocumentState = {
   doc: LiveryDocument
+  /** The document as it is in the project file. The project has unsaved changes when doc !== savedDoc. */
+  savedDoc: LiveryDocument
+  /** The project file (an opaque handle from the main process), or null before the first save. */
+  handle: string | null
+  fileName: string | null
   selectedId: string | null
   past: LiveryDocument[]
   future: LiveryDocument[]
@@ -29,9 +34,17 @@ export type DocumentState = {
   endGesture: () => void
   undo: () => void
   redo: () => void
+  /** Records that `doc` is now in the file `handle`. */
+  markSaved: (doc: LiveryDocument, handle: string, fileName: string) => void
 }
 
-export function createDocumentStore(templateId: string) {
+export type InitialProject = { doc: LiveryDocument; handle: string; fileName: string }
+
+/** True when the document differs from the saved one. Undo back to the saved state makes it false again. */
+export const hasUnsavedChanges = (state: Pick<DocumentState, 'doc' | 'savedDoc'>) => state.doc !== state.savedDoc
+
+export function createDocumentStore(templateId: string, initial?: InitialProject) {
+  const startDoc = initial?.doc ?? emptyDocument(templateId)
   return createStore<DocumentState>()((set, get) => {
     /** Applies a change to the document and records the old document as one history step. */
     const commit = (change: (doc: LiveryDocument) => LiveryDocument, selectedId = get().selectedId) => {
@@ -47,7 +60,10 @@ export function createDocumentStore(templateId: string) {
     const mapLayers = (doc: LiveryDocument, fn: (layers: UserLayer[]) => UserLayer[]) => ({ ...doc, layers: fn(doc.layers) })
 
     return {
-      doc: emptyDocument(templateId),
+      doc: startDoc,
+      savedDoc: startDoc,
+      handle: initial?.handle ?? null,
+      fileName: initial?.fileName ?? null,
       selectedId: null,
       past: [],
       future: [],
@@ -126,6 +142,8 @@ export function createDocumentStore(templateId: string) {
           selectedId: previous.layers.some((l) => l.id === selectedId) ? selectedId : null
         })
       },
+
+      markSaved: (doc, handle, fileName) => set({ savedDoc: doc, handle, fileName }),
 
       redo: () => {
         const { past, future, doc, selectedId } = get()

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createDocumentStore, HISTORY_LIMIT } from './documentStore'
+import { createDocumentStore, hasUnsavedChanges, HISTORY_LIMIT } from './documentStore'
 
 const names = (store: ReturnType<typeof createDocumentStore>) => store.getState().doc.layers.map((l) => l.name)
 
@@ -89,5 +89,28 @@ describe('documentStore', () => {
     const a = s.addLayer('rect')
     for (let i = 0; i < HISTORY_LIMIT + 20; i++) s.updateLayer(a, { opacity: i / 200 })
     expect(store.getState().past.length).toBe(HISTORY_LIMIT)
+  })
+
+  it('tracks unsaved changes; undo back to the saved document clears them', () => {
+    const store = createDocumentStore('t')
+    const s = store.getState()
+    expect(hasUnsavedChanges(store.getState())).toBe(false)
+    const a = s.addLayer('rect')
+    expect(hasUnsavedChanges(store.getState())).toBe(true)
+    s.markSaved(store.getState().doc, 'h1', 'livery.lmulivery')
+    expect(hasUnsavedChanges(store.getState())).toBe(false)
+    s.updateLayer(a, { color: '#00ff00' })
+    expect(hasUnsavedChanges(store.getState())).toBe(true)
+    s.undo()
+    expect(hasUnsavedChanges(store.getState())).toBe(false)
+    expect(store.getState().handle).toBe('h1')
+  })
+
+  it('starts from an opened project without unsaved changes', () => {
+    const doc = { version: 1 as const, templateId: 't', insertion: 3, templateVisibility: {}, layers: [] }
+    const store = createDocumentStore('t', { doc, handle: 'h', fileName: 'a.lmulivery' })
+    expect(store.getState().doc).toBe(doc)
+    expect(hasUnsavedChanges(store.getState())).toBe(false)
+    expect(store.getState().past).toEqual([])
   })
 })

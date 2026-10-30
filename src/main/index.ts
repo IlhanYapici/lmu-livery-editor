@@ -2,7 +2,9 @@ import { app, BrowserWindow, dialog, ipcMain, net, protocol } from 'electron'
 import { stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { IPC, TEMPLATE_PROTOCOL, type Catalogue, type GameLocation } from '../shared/api'
+import { IPC, TEMPLATE_PROTOCOL, type Catalogue, type GameLocation, type OpenProjectResult, type SaveProjectResult } from '../shared/api'
+import { PROJECT_EXTENSION } from '../shared/project'
+import { displayName, ensureFolder, ProjectHandles, readProjectFile, writeAtomic } from './projectFiles'
 import { loadSettings, saveSettings } from './settings'
 import { findLiveryTemplatesDir, locateGameDir, nodeHost } from './steam'
 import { resolveTemplateUrl } from './templateProtocol'
@@ -68,6 +70,61 @@ async function serveTemplate(request: Request): Promise<Response> {
   })
 }
 
+const projects = new ProjectHandles()
+const projectFilters = [{ name: 'LMU livery project', extensions: [PROJECT_EXTENSION] }]
+const projectFolder = () => ensureFolder(join(app.getPath('documents'), 'LMU Liveries'))
+
+async function openProject(window: BrowserWindow | null): Promise<OpenProjectResult> {
+  const options: Electron.OpenDialogOptions = { title: 'Open a livery project', defaultPath: await projectFolder(), filters: projectFilters, properties: ['openFile'] }
+  const result = window ? await dialog.showOpenDialog(window, options) : await dialog.showOpenDialog(options)
+  if (result.canceled || result.filePaths.length === 0) return { status: 'cancelled' }
+  const path = result.filePaths[0]
+  try {
+    const read = await readProjectFile(path)
+    if (!read.ok) return { status: 'error', message: read.error }
+    return { status: 'opened', handle: projects.register(path), fileName: displayName(path), text: read.text }
+  } catch (error) {
+    return { status: 'error', message: `Cannot read the file: ${(error as Error).message}` }
+  }
+}
+
+async function saveProject(window: BrowserWindow | null, text: string, handle: string | null, suggestedName: string): Promise<SaveProjectResult> {
+  let path = handle ? projects.path(handle) : null
+  if (!path) {
+    const safeName = suggestedName.replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Livery'
+    const options: Electron.SaveDialogOptions = {
+      title: 'Save the livery project',
+      defaultPath: join(await projectFolder(), `${safeName}.${PROJECT_EXTENSION}`),
+      filters: projectFilters
+    }
+    const result = window ? await dialog.showSaveDialog(window, options) : await dialog.showSaveDialog(options)
+    if (result.canceled || !result.filePath) return { status: 'cancelled' }
+    path = result.filePath.endsWith(`.${PROJECT_EXTENSION}`) ? result.filePath : `${result.filePath}.${PROJECT_EXTENSION}`
+  }
+  try {
+    await writeAtomic(path, text)
+    return { status: 'saved', handle: projects.register(path), fileName: displayName(path) }
+  } catch (error) {
+    return { status: 'error', message: `Cannot write the file: ${(error as Error).message}` }
+  }
+}
+
+/** The renderer blocks the close when there are unsaved changes; this asks the user what to do. */
+function confirmClose(window: BrowserWindow, event: Electron.Event): void {
+  const choice = dialog.showMessageBoxSync(window, {
+    type: 'warning',
+    title: 'Unsaved changes',
+    message: 'Your livery has unsaved changes.',
+    detail: 'Do you want to save them before you close the app?',
+    buttons: ['Save', "Don't save", 'Cancel'],
+    defaultId: 0,
+    cancelId: 2,
+    noLink: true
+  })
+  if (choice === 1) event.preventDefault() // Ignore the renderer block: close without saving.
+  else if (choice === 0) window.webContents.send(IPC.saveBeforeClose)
+}
+
 function createWindow(): void {
   const window = new BrowserWindow({
     width: 1400,
@@ -81,6 +138,8 @@ function createWindow(): void {
     }
   })
 
+  window.webContents.on('will-prevent-unload', (event) => confirmClose(window, event))
+
   if (process.env.ELECTRON_RENDERER_URL) window.loadURL(process.env.ELECTRON_RENDERER_URL)
   else window.loadFile(join(__dirname, '../renderer/index.html'))
 }
@@ -92,6 +151,13 @@ protocol.registerSchemesAsPrivileged([
 ipcMain.handle(IPC.locateGame, () => locateGame())
 ipcMain.handle(IPC.chooseGameDir, (event) => chooseGameDir(BrowserWindow.fromWebContents(event.sender)))
 ipcMain.handle(IPC.listTemplates, () => listTemplates())
+ipcMain.handle(IPC.openProject, (event) => openProject(BrowserWindow.fromWebContents(event.sender)))
+ipcMain.handle(IPC.saveProject, (event, text: unknown, handle: unknown, suggestedName: unknown) =>
+  typeof text === 'string' && (handle === null || typeof handle === 'string') && typeof suggestedName === 'string'
+    ? saveProject(BrowserWindow.fromWebContents(event.sender), text, handle, suggestedName)
+    : { status: 'error', message: 'Bad save request.' }
+)
+ipcMain.on(IPC.closeWindow, (event) => BrowserWindow.fromWebContents(event.sender)?.close())
 
 app.whenReady().then(() => {
   protocol.handle(TEMPLATE_PROTOCOL, serveTemplate)

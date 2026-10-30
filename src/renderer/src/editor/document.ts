@@ -1,49 +1,11 @@
 import type { RegionId } from '../../../shared/psd/regions'
-import type { Visibility } from '../../../shared/psd/templateRender'
+import type { FillLayer, LayerKind, LiveryDocument, PolygonLayer, RectLayer, TextLayer, UserLayer } from '../../../shared/project'
 
-// The livery document: what the user makes, and what a project file saves.
+// Factories for the livery document. The types and the validation are in src/shared/project.ts.
 // Coordinates are template pixels (0..4096). Shapes keep their scale in `transform` (no baking).
 
-export type Transform = { x: number; y: number; rotation: number; scaleX: number; scaleY: number }
-
-type LayerBase = {
-  id: string
-  name: string
-  visible: boolean
-  locked: boolean
-  opacity: number
-  region: RegionId
-  color: string
-  transform: Transform
-}
-
-export type FillLayer = LayerBase & { kind: 'fill' }
-export type RectLayer = LayerBase & { kind: 'rect'; width: number; height: number; cornerRadius: number }
-export type PolygonLayer = LayerBase & { kind: 'polygon'; points: number[] }
-export type TextLayer = LayerBase & {
-  kind: 'text'
-  text: string
-  fontFamily: string
-  fontSize: number
-  outline: { color: string; width: number } | null
-}
-
-export type UserLayer = FillLayer | RectLayer | PolygonLayer | TextLayer
-export type LayerKind = UserLayer['kind']
-
-export type LiveryDocument = {
-  version: 1
-  /** The template file name. */
-  templateId: string
-  /** Template content layers below the user layers; null = the template default. */
-  insertion: number | null
-  /** Template visibility overrides, by layer index path. */
-  templateVisibility: Visibility
-  /** Bottom to top. */
-  layers: UserLayer[]
-}
-
-export const FONTS = ['Bebas Neue', 'Oswald', 'Roboto'] as const
+export { FONTS } from '../../../shared/project'
+export type { LayerKind, LiveryDocument, Transform, UserLayer } from '../../../shared/project'
 
 export function emptyDocument(templateId: string): LiveryDocument {
   return { version: 1, templateId, insertion: null, templateVisibility: {}, layers: [] }

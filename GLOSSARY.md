@@ -100,3 +100,7 @@ The canvas image made from the template segments, the live user layers and the t
 
 **Exact preview**:
 The canvas image made by the compositor with the user layers in the template stack. The editor shows it only when the fast preview is not exact for the template.
+
+**Project file**:
+A `.lmulivery` file that keeps one livery document and the template it uses.
+_Avoid_: save file, livery file (the game reads TGA files, not project files)

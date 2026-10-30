@@ -1,11 +1,12 @@
 import { Tabs, Toggle, ToggleGroup, Tooltip } from 'radix-ui'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import { useStore } from 'zustand'
 import type { Car, Category, TemplateVariant } from '../../../shared/api'
+import { serializeProject } from '../../../shared/project'
 import { REGIONS } from '../../../shared/psd/regions'
 import { Button } from '../components/Button'
 import { ClassBadge } from '../components/ClassBadge'
-import { createDocumentStore, type DocumentStore } from '../editor/documentStore'
+import { createDocumentStore, hasUnsavedChanges, type DocumentStore, type InitialProject } from '../editor/documentStore'
 import { EditorCanvas, type CanvasApi, type CanvasView, type GuideOptions, type Tool } from '../editor/EditorCanvas'
 import { LayersPanel } from '../editor/LayersPanel'
 import { PropertiesPanel } from '../editor/PropertiesPanel'
@@ -14,7 +15,21 @@ import { createTemplateStore, type TemplateStore } from '../editor/templateStore
 import { Toolbar } from '../editor/Toolbar'
 import styles from './EditorScreen.module.css'
 
-type Props = { category: Category; car: Car; variant: TemplateVariant }
+/** Lets the app ask the editor about unsaved changes before it leaves the editor. */
+export type EditorGuard = { hasUnsavedChanges: () => boolean; save: () => Promise<boolean> }
+
+type Props = {
+  category: Category
+  car: Car
+  variant: TemplateVariant
+  /** An opened project, or null for a new livery. */
+  project: InitialProject | null
+  /** The template file changed since the project was saved (a game update). */
+  templateChanged: boolean
+  guardRef: RefObject<EditorGuard | null>
+  onTitle: (title: string) => void
+  onError: (lines: string[]) => void
+}
 
 const rgb = ([r, g, b]: number[]) => `rgb(${r} ${g} ${b})`
 
@@ -33,14 +48,14 @@ export function EditorScreen(props: Props) {
 
   useEffect(() => {
     const template = createTemplateStore(props.variant.id)
-    setStores({ template, document: createDocumentStore(props.variant.id) })
+    setStores({ template, document: createDocumentStore(props.variant.id, props.project ?? undefined) })
     return () => template.getState().dispose()
   }, [props.variant.id])
 
   return stores ? <EditorBody {...props} templateStore={stores.template} documentStore={stores.document} /> : null
 }
 
-function EditorBody({ category, car, variant, templateStore, documentStore }: Props & { templateStore: TemplateStore; documentStore: DocumentStore }) {
+function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle, onError, templateStore, documentStore }: Props & { templateStore: TemplateStore; documentStore: DocumentStore }) {
   const t = useStore(templateStore)
   const d = useStore(documentStore)
   const [view, setView] = useState<CanvasView>('livery')
@@ -50,6 +65,10 @@ function EditorBody({ category, car, variant, templateStore, documentStore }: Pr
   const [fitSignal, setFitSignal] = useState(0)
   const [zoom, setZoom] = useState(0)
   const canvasApi = useRef<CanvasApi | null>(null)
+  const [showTemplateWarning, setShowTemplateWarning] = useState(templateChanged)
+  /** Set when the user chose "Save" in the close dialog: the next close must not be blocked. */
+  const allowClose = useRef(false)
+  const dirty = hasUnsavedChanges(d)
 
   const insertion = d.doc.insertion ?? t.outline?.defaultInsertion ?? null
   const selected = d.doc.layers.find((l) => l.id === d.selectedId) ?? null
@@ -70,6 +89,42 @@ function EditorBody({ category, car, variant, templateStore, documentStore }: Pr
     return () => clearTimeout(timer)
   }, [d.doc, d.selectedId, t.segments, t.updating, insertion])
 
+  /** Saves the project. "Save as" (or the first save) asks for a file. Returns true when the file is written. */
+  const save = useCallback(
+    async (asNew: boolean) => {
+      const { doc, handle, markSaved } = documentStore.getState()
+      const result = await window.lmu.saveProject(serializeProject(doc, variant.sizeBytes), asNew ? null : handle, `${car.name} ${variant.label}`)
+      if (result.status === 'saved') markSaved(doc, result.handle, result.fileName)
+      if (result.status === 'error') onError([result.message])
+      return result.status === 'saved'
+    },
+    [documentStore, variant, car.name, onError]
+  )
+
+  guardRef.current = { hasUnsavedChanges: () => hasUnsavedChanges(documentStore.getState()), save: () => save(false) }
+
+  useEffect(() => onTitle(`${d.fileName ?? 'Untitled livery'}${dirty ? ' •' : ''}`), [d.fileName, dirty, onTitle])
+
+  // Closing the window with unsaved changes: block the unload; the main process asks the user (ADR-0021).
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (allowClose.current || !hasUnsavedChanges(documentStore.getState())) return
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    const unsubscribe = window.lmu.onSaveBeforeClose(async () => {
+      if (await save(false)) {
+        allowClose.current = true
+        window.lmu.closeWindow()
+      }
+    })
+    return () => {
+      window.removeEventListener('beforeunload', onBeforeUnload)
+      unsubscribe()
+    }
+  }, [documentStore, save])
+
   const addFill = useCallback(() => {
     documentStore.getState().addLayer('fill', {}, 0)
     setTab('layers')
@@ -79,6 +134,13 @@ function EditorBody({ category, car, variant, templateStore, documentStore }: Pr
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement
+      if (e.ctrlKey && e.key.toLowerCase() === 's') {
+        // Blur a field first, so that its value is committed before the save.
+        e.preventDefault()
+        ;(document.activeElement as HTMLElement | null)?.blur()
+        setTimeout(() => void save(e.shiftKey), 0)
+        return
+      }
       if (target.closest('input, textarea, select, [contenteditable="true"], [role="listbox"]')) return
       const s = documentStore.getState()
       const key = e.key.toLowerCase()
@@ -95,7 +157,7 @@ function EditorBody({ category, car, variant, templateStore, documentStore }: Pr
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [documentStore])
+  }, [documentStore, save])
 
   const previewText = !t.segments
     ? ''
@@ -145,6 +207,14 @@ function EditorBody({ category, car, variant, templateStore, documentStore }: Pr
           </div>
         )}
         {t.status === 'ready' && t.updating && <div className={styles.updating}>Updating the template…</div>}
+        {showTemplateWarning && (
+          <div className={styles.warning} role="alert">
+            This template changed since the project was saved (probably a game update). Check the positions of your layers.
+            <button className={styles.toolButton} onClick={() => setShowTemplateWarning(false)}>
+              OK
+            </button>
+          </div>
+        )}
         <div className={styles.canvasTools}>
           <button className={styles.toolButton} onClick={d.undo} disabled={!d.past.length} aria-label="Undo (Ctrl+Z)">
             ↶
@@ -233,6 +303,12 @@ function EditorBody({ category, car, variant, templateStore, documentStore }: Pr
           Mask
         </Toggle.Root>
         <span className={styles.spacer} />
+        <Button onClick={() => save(false)} title="Save (Ctrl+S)">
+          Save
+        </Button>
+        <Button onClick={() => save(true)} title="Save as (Ctrl+Shift+S)">
+          Save as
+        </Button>
         <span className={styles.status}>
           {t.status === 'ready' && (
             <>

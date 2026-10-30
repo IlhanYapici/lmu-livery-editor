@@ -87,7 +87,7 @@ export function PropertiesPanel({ layer, table, updateLayer, beginGesture, endGe
           <div className={styles.grid}>
             <label className={styles.label}>
               Font
-              <Select.Root value={layer.fontFamily} onValueChange={(fontFamily) => update({ fontFamily })}>
+              <Select.Root value={layer.fontFamily} onValueChange={(fontFamily) => update({ fontFamily: fontFamily as (typeof FONTS)[number] })}>
                 <Select.Trigger className={styles.input}>
                   <Select.Value />
                 </Select.Trigger>
