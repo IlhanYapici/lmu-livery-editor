@@ -1,0 +1,16 @@
+appId: com.lmu.livery-editor
+productName: LMU Livery Editor
+electronLanguages:
+  - en-US
+  - fr
+directories:
+  output: dist
+files:
+  - out/**
+  - package.json
+win:
+  target:
+    - target: dir
+      arch: x64
+  # Editing the exe resources needs Wine on Linux. Test builds keep the default Electron icon and details.
+  signAndEditExecutable: false
