@@ -29,8 +29,12 @@ function mask(values: number[], defaultColor = 0): Layer['mask'] {
   return { left: 0, top: 0, right: W, bottom: H, defaultColor, imageData: { width: W, height: H, data } }
 }
 
+// The compositor changes decoded pixels in place, so return a copy like the real decoder does.
 const decoder: LayerDecoder = {
-  pixels: (l) => l.imageData as PixelData | undefined,
+  pixels: (l) => {
+    const d = l.imageData as PixelData | undefined
+    return d && { width: d.width, height: d.height, data: new Uint8ClampedArray(d.data as Uint8ClampedArray) }
+  },
   mask: (l) => l.mask?.imageData as PixelData | undefined
 }
 

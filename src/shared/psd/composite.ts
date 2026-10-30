@@ -7,7 +7,10 @@ import type { BlendMode, Layer, LayerEffectsInfo, LevelsAdjustmentChannel, Pixel
 
 export type Raster = { left: number; top: number; width: number; height: number; data: Uint8ClampedArray<ArrayBuffer> }
 
-/** Decodes pixels on request, so only one layer is decoded at a time. */
+/**
+ * Decodes pixels on request, so only one layer is decoded at a time. `pixels` must return a new buffer
+ * for each call (ag-psd's getLayerImageData does): the compositor changes it in place, without a copy.
+ */
 export interface LayerDecoder {
   pixels(layer: Layer): PixelData | undefined
   mask(layer: Layer): PixelData | undefined
@@ -322,8 +325,13 @@ function layerRaster(ctx: Context, layer: Layer): Raster | null {
     return null
   }
   const step = pixels.data.length / (pixels.width * pixels.height)
-  const data = step === 4 ? new Uint8ClampedArray(pixels.data) : new Uint8ClampedArray(pixels.width * pixels.height * 4)
-  if (step !== 4) note(ctx, `pixels:${step}-channels`)
+  if (step !== 4) {
+    note(ctx, `pixels:${step}-channels`)
+    return null
+  }
+  // A view, not a copy: the decoder gives a new buffer per call. A copy here cost 64 MB per full-size layer.
+  const { buffer, byteOffset, length } = pixels.data
+  const data = new Uint8ClampedArray(buffer as ArrayBuffer, byteOffset, length)
   return { left: layer.left ?? 0, top: layer.top ?? 0, width: pixels.width, height: pixels.height, data }
 }
 
