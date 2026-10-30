@@ -1,4 +1,4 @@
-import { Tabs, Toggle, ToggleGroup, Tooltip } from 'radix-ui'
+import { Tabs, Toggle, ToggleGroup } from 'radix-ui'
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import { useStore } from 'zustand'
 import type { Car, Category, TemplateVariant } from '../../../shared/api'
@@ -7,7 +7,9 @@ import { REGIONS } from '../../../shared/psd/regions'
 import { Button } from '../components/Button'
 import { ClassBadge } from '../components/ClassBadge'
 import { createDocumentStore, hasUnsavedChanges, type DocumentStore, type InitialProject } from '../editor/documentStore'
-import { EditorCanvas, type CanvasApi, type CanvasView, type GuideOptions, type Tool } from '../editor/EditorCanvas'
+import { ConfirmDialog } from '../components/ConfirmDialog'
+import { EditorCanvas, type CanvasView, type GuideOptions, type Tool } from '../editor/EditorCanvas'
+import { rasterizeRegions, rasterizeSkin } from '../editor/rasterize'
 import { LayersPanel } from '../editor/LayersPanel'
 import { PropertiesPanel } from '../editor/PropertiesPanel'
 import { TemplatePanel } from '../editor/TemplatePanel'
@@ -33,7 +35,17 @@ type Props = {
 
 const rgb = ([r, g, b]: number[]) => `rgb(${r} ${g} ${b})`
 
-const STAGE_TEXT = { reading: 'Reading the template', parsing: 'Reading the layers', guides: 'Drawing the guides', segments: 'Drawing the template' }
+const STAGE_TEXT = {
+  reading: 'Reading the template',
+  parsing: 'Reading the layers',
+  guides: 'Drawing the guides',
+  segments: 'Drawing the template',
+  'export-skin': 'Drawing the livery',
+  'export-regions': 'Drawing the region map'
+}
+
+type ExportTarget = 'game' | 'folder'
+type ExportReport = { title: string; lines: string[] }
 
 /** Delay after the last edit before the exact preview starts (only for templates where the fast one is not exact). */
 const EXACT_DELAY_MS = 600
@@ -64,7 +76,9 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
   const [tab, setTab] = useState('layers')
   const [fitSignal, setFitSignal] = useState(0)
   const [zoom, setZoom] = useState(0)
-  const canvasApi = useRef<CanvasApi | null>(null)
+  const [confirmGameExport, setConfirmGameExport] = useState(false)
+  const [writing, setWriting] = useState(false)
+  const [report, setReport] = useState<ExportReport | null>(null)
   const [showTemplateWarning, setShowTemplateWarning] = useState(templateChanged)
   /** Set when the user chose "Save" in the close dialog: the next close must not be blocked. */
   const allowClose = useRef(false)
@@ -82,9 +96,9 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
   useEffect(() => {
     t.clearExact()
     if (!t.segments || t.segments.fastIsExact || t.updating || insertion === null) return
+    const { width, height } = t.outline!
     const timer = setTimeout(async () => {
-      const user = await canvasApi.current?.rasterizeUser()
-      if (user) t.requestExact(user, insertion, d.doc.templateVisibility)
+      t.requestExact(await rasterizeSkin(d.doc.layers, width, height), insertion, d.doc.templateVisibility)
     }, EXACT_DELAY_MS)
     return () => clearTimeout(timer)
   }, [d.doc, d.selectedId, t.segments, t.updating, insertion])
@@ -124,6 +138,33 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
       unsubscribe()
     }
   }, [documentStore, save])
+
+  /** Makes the two TGA files in the worker, then the main process writes them (ADR-0022). */
+  const runExport = async (target: ExportTarget) => {
+    if (!t.outline || insertion === null) return
+    const { width, height } = t.outline
+    const { doc } = documentStore.getState()
+    try {
+      const [user, userRegions] = await Promise.all([rasterizeSkin(doc.layers, width, height), rasterizeRegions(doc.layers, width, height)])
+      const files = await t.exportFiles(user, userRegions, insertion, doc.templateVisibility)
+      setWriting(true)
+      const result = target === 'game' ? await window.lmu.exportToGame(files.skin, files.region) : await window.lmu.exportToFolder(files.skin, files.region)
+      setWriting(false)
+      if (result.status === 'cancelled') return
+      if (result.status === 'error') return setReport({ title: 'Export failed', lines: [result.message] })
+      setReport({
+        title: 'Livery exported',
+        lines: [
+          `customskin.tga and customskin_region.tga are in ${result.folder}.`,
+          ...(result.backup ? [`The previous files are in ${result.backup}.`] : []),
+          ...(target === 'game' ? [`In the game: open the ${car.name} in the showroom and press RELOAD.`] : [])
+        ]
+      })
+    } catch (error) {
+      setWriting(false)
+      setReport({ title: 'Export failed', lines: [(error as Error).message] })
+    }
+  }
 
   const addFill = useCallback(() => {
     documentStore.getState().addLayer('fill', {}, 0)
@@ -189,7 +230,6 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
           guides={guides}
           fitSignal={fitSignal}
           onZoomChange={setZoom}
-          apiRef={canvasApi}
         />
         {t.status === 'ready' && <Toolbar tool={tool} onTool={setTool} onAddFill={addFill} />}
         {t.status !== 'ready' && (
@@ -204,6 +244,14 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
                 </div>
               </>
             )}
+          </div>
+        )}
+        {(t.exporting || writing) && (
+          <div className={styles.overlay}>
+            <p>{writing ? 'Writing the files' : t.stage ? STAGE_TEXT[t.stage] : 'Exporting'}…</p>
+            <div className={styles.progress}>
+              <div className={styles.progressBusy} />
+            </div>
           </div>
         )}
         {t.status === 'ready' && t.updating && <div className={styles.updating}>Updating the template…</div>}
@@ -316,23 +364,39 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
             </>
           )}
         </span>
-        <Tooltip.Provider delayDuration={200}>
-          <Tooltip.Root>
-            <Tooltip.Trigger asChild>
-              <span tabIndex={0}>
-                <Button variant="primary" size="large" disabled>
-                  Export
-                </Button>
-              </span>
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Content className={styles.tooltip} sideOffset={6}>
-                The TGA export comes in Phase 4.
-              </Tooltip.Content>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-        </Tooltip.Provider>
+        <Button onClick={() => runExport('folder')} disabled={t.status !== 'ready' || t.exporting || writing} title="Write the two TGA files into a folder of your choice">
+          Export to folder
+        </Button>
+        <Button variant="primary" size="large" onClick={() => setConfirmGameExport(true)} disabled={t.status !== 'ready' || t.exporting || writing}>
+          Export
+        </Button>
       </footer>
+
+      <ConfirmDialog
+        open={confirmGameExport}
+        title="Export to the game"
+        actions={[
+          {
+            label: 'Export',
+            primary: true,
+            onSelect: () => {
+              setConfirmGameExport(false)
+              void runExport('game')
+            }
+          },
+          { label: 'Cancel', onSelect: () => setConfirmGameExport(false) }
+        ]}
+      >
+        <p>
+          The game has one custom livery for all cars (<code>UserData\Liveries</code>). The export replaces the files that are there now. The app keeps the previous
+          files in <code>UserData\Liveries\Backups</code> (the last 5 exports).
+        </p>
+      </ConfirmDialog>
+      <ConfirmDialog open={report !== null} title={report?.title ?? ''} actions={[{ label: 'OK', primary: true, onSelect: () => setReport(null) }]}>
+        {report?.lines.map((line) => (
+          <p key={line}>{line}</p>
+        ))}
+      </ConfirmDialog>
     </main>
   )
 }

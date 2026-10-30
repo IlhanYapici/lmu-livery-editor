@@ -12,7 +12,9 @@ const api: LmuApi = {
     ipcRenderer.on(IPC.saveBeforeClose, listener)
     return () => ipcRenderer.removeListener(IPC.saveBeforeClose, listener)
   },
-  closeWindow: () => ipcRenderer.send(IPC.closeWindow)
+  closeWindow: () => ipcRenderer.send(IPC.closeWindow),
+  exportToGame: (skin, region) => ipcRenderer.invoke(IPC.exportToGame, skin, region),
+  exportToFolder: (skin, region) => ipcRenderer.invoke(IPC.exportToFolder, skin, region)
 }
 
 contextBridge.exposeInMainWorld('lmu', api)

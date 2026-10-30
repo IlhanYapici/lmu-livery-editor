@@ -2,7 +2,8 @@ import { app, BrowserWindow, dialog, ipcMain, net, protocol } from 'electron'
 import { stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { IPC, TEMPLATE_PROTOCOL, type Catalogue, type GameLocation, type OpenProjectResult, type SaveProjectResult } from '../shared/api'
+import { IPC, TEMPLATE_PROTOCOL, type Catalogue, type ExportResult, type GameLocation, type OpenProjectResult, type SaveProjectResult } from '../shared/api'
+import { checkGameTga, liveryFilesExist, writeLiveryFiles } from './liveryExport'
 import { PROJECT_EXTENSION } from '../shared/project'
 import { displayName, ensureFolder, ProjectHandles, readProjectFile, writeAtomic } from './projectFiles'
 import { loadSettings, saveSettings } from './settings'
@@ -109,6 +110,67 @@ async function saveProject(window: BrowserWindow | null, text: string, handle: s
   }
 }
 
+/** Bytes from the renderer: an ArrayBuffer or a typed array, else null. */
+function toBytes(value: unknown): Uint8Array | null {
+  if (value instanceof ArrayBuffer) return new Uint8Array(value)
+  if (ArrayBuffer.isView(value)) return new Uint8Array(value.buffer, value.byteOffset, value.byteLength)
+  return null
+}
+
+function checkFiles(skin: unknown, region: unknown): { skin: Uint8Array; region: Uint8Array } | { error: string } {
+  const s = toBytes(skin)
+  const r = toBytes(region)
+  if (!s || !r) return { error: 'Bad export request.' }
+  const problem = checkGameTga(s, 'customskin.tga') ?? checkGameTga(r, 'customskin_region.tga')
+  return problem ? { error: problem } : { skin: s, region: r }
+}
+
+async function exportToGame(skin: unknown, region: unknown): Promise<ExportResult> {
+  const files = checkFiles(skin, region)
+  if ('error' in files) return { status: 'error', message: files.error }
+  const { gameDir } = await loadSettings(settingsFile())
+  if (!gameDir) return { status: 'error', message: 'The game folder is not known.' }
+  const folder = join(gameDir, 'UserData', 'Liveries')
+  try {
+    const backup = await writeLiveryFiles(folder, files.skin, files.region, { backup: true })
+    return { status: 'exported', folder, backup }
+  } catch (error) {
+    return { status: 'error', message: `Cannot write the files: ${(error as Error).message}` }
+  }
+}
+
+async function exportToFolder(window: BrowserWindow | null, skin: unknown, region: unknown): Promise<ExportResult> {
+  const files = checkFiles(skin, region)
+  if ('error' in files) return { status: 'error', message: files.error }
+  const options: Electron.OpenDialogOptions = {
+    title: 'Select a folder for customskin.tga and customskin_region.tga',
+    defaultPath: await projectFolder(),
+    properties: ['openDirectory', 'createDirectory']
+  }
+  const result = window ? await dialog.showOpenDialog(window, options) : await dialog.showOpenDialog(options)
+  if (result.canceled || result.filePaths.length === 0) return { status: 'cancelled' }
+  const folder = result.filePaths[0]
+  if (await liveryFilesExist(folder)) {
+    const box: Electron.MessageBoxOptions = {
+      type: 'question',
+      message: 'This folder already has livery files.',
+      detail: 'Replace customskin.tga and customskin_region.tga in this folder?',
+      buttons: ['Replace', 'Cancel'],
+      defaultId: 1,
+      cancelId: 1,
+      noLink: true
+    }
+    const answer = window ? await dialog.showMessageBox(window, box) : await dialog.showMessageBox(box)
+    if (answer.response !== 0) return { status: 'cancelled' }
+  }
+  try {
+    await writeLiveryFiles(folder, files.skin, files.region, { backup: false })
+    return { status: 'exported', folder, backup: null }
+  } catch (error) {
+    return { status: 'error', message: `Cannot write the files: ${(error as Error).message}` }
+  }
+}
+
 /** The renderer blocks the close when there are unsaved changes; this asks the user what to do. */
 function confirmClose(window: BrowserWindow, event: Electron.Event): void {
   const choice = dialog.showMessageBoxSync(window, {
@@ -157,6 +219,8 @@ ipcMain.handle(IPC.saveProject, (event, text: unknown, handle: unknown, suggeste
     ? saveProject(BrowserWindow.fromWebContents(event.sender), text, handle, suggestedName)
     : { status: 'error', message: 'Bad save request.' }
 )
+ipcMain.handle(IPC.exportToGame, (_event, skin: unknown, region: unknown) => exportToGame(skin, region))
+ipcMain.handle(IPC.exportToFolder, (event, skin: unknown, region: unknown) => exportToFolder(BrowserWindow.fromWebContents(event.sender), skin, region))
 ipcMain.on(IPC.closeWindow, (event) => BrowserWindow.fromWebContents(event.sender)?.close())
 
 app.whenReady().then(() => {

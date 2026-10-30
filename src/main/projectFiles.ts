@@ -22,10 +22,10 @@ export class ProjectHandles {
 }
 
 /** Writes a temporary file next to the target, then renames it: a crash never leaves half a file. */
-export async function writeAtomic(path: string, text: string): Promise<void> {
+export async function writeAtomic(path: string, data: string | Uint8Array): Promise<void> {
   const temporary = `${path}.${process.pid}.tmp`
   try {
-    await writeFile(temporary, text, 'utf8')
+    await writeFile(temporary, data)
     await rename(temporary, path)
   } catch (error) {
     await rm(temporary, { force: true })

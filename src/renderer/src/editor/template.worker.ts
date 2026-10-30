@@ -2,7 +2,9 @@
 import { getLayerImageData, getLayerMaskImageData, initializeCanvas, readPsd, type Psd } from 'ag-psd'
 import type { LayerDecoder, Raster } from '../../../shared/psd/composite'
 import { classifyTemplate, type TemplateStructure } from '../../../shared/psd/roles'
+import { nearestRegion, REGIONS } from '../../../shared/psd/regions'
 import { outlineTemplate, renderExact, renderGuides, renderSegments } from '../../../shared/psd/templateRender'
+import { encodeTga24 } from '../../../shared/tga'
 import type { WorkerRequest, WorkerResponse } from './templateMessages'
 
 // Reads one template and makes the canvas bitmaps (ADR-0008: raw read, one layer decoded at a time).
@@ -24,8 +26,18 @@ const decoder: LayerDecoder = {
 
 let psd: Psd | null = null
 let structure: TemplateStructure | null = null
+/** The template region map, kept for the export (64 MB). */
+let templateRegions: Raster | null = null
 
 const post = (message: WorkerResponse, transfer: Transferable[] = []) => self.postMessage(message, transfer)
+
+function bitmapPixels(bitmap: ImageBitmap): Uint8ClampedArray<ArrayBuffer> {
+  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
+  const context = canvas.getContext('2d')!
+  context.drawImage(bitmap, 0, 0)
+  bitmap.close()
+  return context.getImageData(0, 0, canvas.width, canvas.height).data
+}
 
 const toBitmap = (raster: Raster) => createImageBitmap(new ImageData(raster.data, raster.width, raster.height))
 
@@ -62,6 +74,7 @@ async function load(url: string) {
 
   post({ type: 'progress', stage: 'guides', fraction: null })
   const guides = renderGuides(psd, structure, decoder)
+  templateRegions = guides.regions
   const wireframe = guides.wireframe && (await toBitmap(guides.wireframe))
   const mask = guides.mask && (await toBitmap(guides.mask))
   const regions = await toBitmap(guides.regions)
@@ -85,13 +98,37 @@ async function exact(request: Extract<WorkerRequest, { type: 'exact' }>) {
   if (!psd || !structure) return
   const start = performance.now()
   const { width, height } = request.user
-  const canvas = new OffscreenCanvas(width, height)
-  const context = canvas.getContext('2d')!
-  context.drawImage(request.user, 0, 0)
-  request.user.close()
-  const user: Raster = { left: 0, top: 0, width, height, data: context.getImageData(0, 0, width, height).data }
+  const user: Raster = { left: 0, top: 0, width, height, data: bitmapPixels(request.user) }
   const image = await toBitmap(renderExact(psd, structure, { insertion: request.insertion, visibility: request.visibility }, user, decoder))
   post({ type: 'exact', requestId: request.requestId, image, ms: performance.now() - start }, [image])
+}
+
+/**
+ * The two game files. Skin: the exact compositor with the user layers. Region map: the template regions,
+ * then the user region shapes where they cover at least half a pixel, snapped to the 5 region colours.
+ */
+async function exportFiles(request: Extract<WorkerRequest, { type: 'export' }>) {
+  if (!psd || !structure || !templateRegions) return
+  const start = performance.now()
+  const { width, height } = psd
+  post({ type: 'progress', stage: 'export-skin', fraction: null })
+  const user: Raster = { left: 0, top: 0, width, height, data: bitmapPixels(request.user) }
+  const skinImage = renderExact(psd, structure, { insertion: request.insertion, visibility: request.visibility }, user, decoder)
+  const skin = encodeTga24(skinImage.data, width, height)
+
+  post({ type: 'progress', stage: 'export-regions', fraction: null })
+  const regions = new Uint8ClampedArray(templateRegions.data)
+  const shapes = bitmapPixels(request.userRegions)
+  for (let i = 0; i < shapes.length; i += 4) {
+    if (shapes[i + 3] < 128) continue
+    // getImageData gives non-premultiplied colours, so edge pixels keep the hue of their shape.
+    const [r, g, b] = REGIONS[nearestRegion(shapes[i], shapes[i + 1], shapes[i + 2])].rgb
+    regions[i] = r
+    regions[i + 1] = g
+    regions[i + 2] = b
+  }
+  const region = encodeTga24(regions, width, height)
+  post({ type: 'exported', skin: skin.buffer, region: region.buffer, ms: performance.now() - start }, [skin.buffer, region.buffer])
 }
 
 // Requests run one after the other, in order.
@@ -99,6 +136,17 @@ let queue = Promise.resolve()
 self.onmessage = (event: MessageEvent<WorkerRequest>) => {
   const request = event.data
   queue = queue
-    .then(() => (request.type === 'load' ? load(request.url) : request.type === 'segments' ? segments(request) : exact(request)))
+    .then(() => {
+      switch (request.type) {
+        case 'load':
+          return load(request.url)
+        case 'segments':
+          return segments(request)
+        case 'exact':
+          return exact(request)
+        case 'export':
+          return exportFiles(request)
+      }
+    })
     .catch((e: Error) => post({ type: 'error', message: e.message }))
 }

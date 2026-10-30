@@ -20,6 +20,8 @@ export type TemplateState = {
   /** Exact image with the user layers (only when the fast preview is not exact); null after any edit. */
   exact: ImageBitmap | null
   exactPending: boolean
+  /** True while the worker makes the two game files. */
+  exporting: boolean
   timings: { loadMs: number | null; segmentsMs: number | null; exactMs: number | null }
 
   /** Draws the template segments for this insertion point and visibility (debounced). */
@@ -28,8 +30,12 @@ export type TemplateState = {
   requestExact: (user: ImageBitmap, insertion: number, visibility: Visibility) => void
   /** Drops the exact image (an edit made it old). */
   clearExact: () => void
+  /** Makes the two TGA files. The store takes ownership of the bitmaps. */
+  exportFiles: (user: ImageBitmap, userRegions: ImageBitmap, insertion: number, visibility: Visibility) => Promise<ExportedFiles>
   dispose: () => void
 }
+
+export type ExportedFiles = { skin: ArrayBuffer; region: ArrayBuffer; ms: number }
 
 const SEGMENTS_DELAY_MS = 250
 
@@ -40,6 +46,7 @@ export function createTemplateStore(fileName: string) {
   let lastExact = 0
   let rendered: string | null = null
   let timer: ReturnType<typeof setTimeout> | undefined
+  let pendingExport: { resolve: (files: ExportedFiles) => void; reject: (error: Error) => void } | null = null
 
   const store = createStore<TemplateState>()((set, get) => ({
     status: 'loading',
@@ -52,6 +59,7 @@ export function createTemplateStore(fileName: string) {
     updating: false,
     exact: null,
     exactPending: false,
+    exporting: false,
     timings: { loadMs: null, segmentsMs: null, exactMs: null },
 
     render: (insertion, visibility) => {
@@ -76,7 +84,16 @@ export function createTemplateStore(fileName: string) {
       if (get().exact || get().exactPending) set({ exact: null, exactPending: false })
     },
 
+    exportFiles: (user, userRegions, insertion, visibility) =>
+      new Promise<ExportedFiles>((resolve, reject) => {
+        if (pendingExport) return reject(new Error('An export is already running.'))
+        pendingExport = { resolve, reject }
+        set({ exporting: true })
+        send({ type: 'export', insertion, visibility, user, userRegions }, [user, userRegions])
+      }),
+
     dispose: () => {
+      pendingExport?.reject(new Error('The editor closed.'))
       clearTimeout(timer)
       worker.terminate()
       const { guides, segments, exact } = get()
@@ -127,7 +144,19 @@ export function createTemplateStore(fileName: string) {
         state.exact?.close()
         store.setState({ exact: message.image, exactPending: false, timings: { ...state.timings, exactMs: message.ms } })
         break
+      case 'exported':
+        store.setState({ exporting: false, stage: null })
+        pendingExport?.resolve({ skin: message.skin, region: message.region, ms: message.ms })
+        pendingExport = null
+        break
       case 'error':
+        // An export error must not break the editor: report it to the export caller only.
+        if (pendingExport) {
+          pendingExport.reject(new Error(message.message))
+          pendingExport = null
+          store.setState({ exporting: false, stage: null })
+          break
+        }
         store.setState({ status: 'error', error: message.message, updating: false, exactPending: false })
         break
     }

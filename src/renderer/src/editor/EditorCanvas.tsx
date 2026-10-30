@@ -1,5 +1,5 @@
 import type Konva from 'konva'
-import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Group, Image as KonvaImage, Layer, Line, Rect, Stage, Text, Transformer } from 'react-konva'
 import { REGIONS } from '../../../shared/psd/regions'
 import { FONTS, type UserLayer } from './document'
@@ -15,9 +15,6 @@ export type CanvasView = 'livery' | 'regions'
 export type GuideOptions = { wireframe: boolean; mask: boolean }
 export type Tool = 'select' | 'rect' | 'polygon' | 'text'
 
-/** Lets the editor draw the user layers at template size for the exact preview. */
-export type CanvasApi = { rasterizeUser: () => Promise<ImageBitmap | null> }
-
 type DocumentProps = Pick<DocumentState, 'selectedId' | 'select' | 'addLayer' | 'updateLayer' | 'beginGesture' | 'endGesture'> & {
   layers: UserLayer[]
 }
@@ -32,7 +29,6 @@ type Props = {
   /** Changes when the user asks to fit the template in the view. */
   fitSignal: number
   onZoomChange?: (scale: number) => void
-  apiRef: RefObject<CanvasApi | null>
 }
 
 const FILTER_ID = 'lmu-template-table'
@@ -42,7 +38,7 @@ const REGION_RGB = Object.fromEntries(REGIONS.map((r) => [r.id, `rgb(${r.rgb.joi
 
 type Draft = { kind: 'rect'; x0: number; y0: number; x1: number; y1: number } | { kind: 'polygon'; points: number[]; cursor: [number, number] | null }
 
-export function EditorCanvas({ template, document: doc, tool, onToolDone, view, guides, fitSignal, onZoomChange, apiRef }: Props) {
+export function EditorCanvas({ template, document: doc, tool, onToolDone, view, guides, fitSignal, onZoomChange }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ width: 0, height: 0 })
   const [camera, setCamera] = useState({ scale: 0.2, x: 0, y: 0 })
@@ -97,15 +93,6 @@ export function EditorCanvas({ template, document: doc, tool, onToolDone, view, 
     const node = layer && layer.kind !== 'fill' && !layer.locked && layer.visible ? userRef.current?.findOne(`#${layer.id}`) : null
     transformer.nodes(node && tool === 'select' ? [node] : [])
   }, [doc.selectedId, doc.layers, tool])
-
-  apiRef.current = {
-    rasterizeUser: async () => {
-      const group = userRef.current
-      if (!group) return null
-      const canvas = group.toCanvas({ x: camera.x, y: camera.y, width: width * camera.scale, height: height * camera.scale, pixelRatio: 1 / camera.scale })
-      return createImageBitmap(canvas)
-    }
-  }
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -202,8 +189,9 @@ export function EditorCanvas({ template, document: doc, tool, onToolDone, view, 
   const at = { x: camera.x, y: camera.y, scaleX: camera.scale, scaleY: camera.scale }
   const smoothing = camera.scale < 1
 
+  // In the region view, Base layers keep the template regions and the others show at full opacity (ADR-0023).
   const userNodes = (regionColors: boolean) =>
-    doc.layers.map((layer) => (
+    (regionColors ? doc.layers.filter((l) => l.region !== 'base').map((l) => ({ ...l, opacity: 1 })) : doc.layers).map((layer) => (
       <UserLayerNode
         key={layer.id}
         layer={layer}

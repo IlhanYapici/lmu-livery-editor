@@ -38,6 +38,11 @@ export type SaveProjectResult =
   | { status: 'cancelled' }
   | { status: 'error'; message: string }
 
+export type ExportResult =
+  | { status: 'exported'; folder: string; backup: string | null }
+  | { status: 'cancelled' }
+  | { status: 'error'; message: string }
+
 export interface LmuApi {
   locateGame(): Promise<GameLocation>
   chooseGameDir(): Promise<GameLocation>
@@ -51,6 +56,10 @@ export interface LmuApi {
   onSaveBeforeClose(callback: () => void): () => void
   /** Closes the window (after a save that the close dialog asked for). */
   closeWindow(): void
+  /** Writes the two TGA files into the game (UserData\Liveries), after a backup of the old ones. */
+  exportToGame(skin: ArrayBuffer, region: ArrayBuffer): Promise<ExportResult>
+  /** Writes the two TGA files into a folder that the user selects. */
+  exportToFolder(skin: ArrayBuffer, region: ArrayBuffer): Promise<ExportResult>
 }
 
 export const IPC = {
@@ -60,7 +69,9 @@ export const IPC = {
   openProject: 'project:open',
   saveProject: 'project:save',
   saveBeforeClose: 'app:save-before-close',
-  closeWindow: 'app:close'
+  closeWindow: 'app:close',
+  exportToGame: 'export:game',
+  exportToFolder: 'export:folder'
 } as const
 
 /** Custom protocol for template files: `lmu-template://template/<file name>`. */

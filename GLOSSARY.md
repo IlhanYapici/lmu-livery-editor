@@ -104,3 +104,10 @@ The canvas image made by the compositor with the user layers in the template sta
 **Project file**:
 A `.lmulivery` file that keeps one livery document and the template it uses.
 _Avoid_: save file, livery file (the game reads TGA files, not project files)
+
+**Export**:
+Writing the skin file and the region file. "Export" writes them into the game livery slot; "Export to folder" writes them where the user selects.
+_Avoid_: save (saving writes the project file)
+
+**Livery slot**:
+The one place where the game reads a custom livery: `UserData\Liveries`. It is the same for all cars.
