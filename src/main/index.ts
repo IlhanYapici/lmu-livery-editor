@@ -1,8 +1,9 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { join } from 'node:path'
-import { IPC, type GameLocation } from '../shared/api'
+import { IPC, type Catalogue, type GameLocation } from '../shared/api'
 import { loadSettings, saveSettings } from './settings'
 import { findLiveryTemplatesDir, locateGameDir, nodeHost } from './steam'
+import { scanTemplates } from './templates'
 
 const settingsFile = () => join(app.getPath('userData'), 'settings.json')
 
@@ -39,6 +40,12 @@ async function chooseGameDir(window: BrowserWindow | null): Promise<GameLocation
   return { status: 'found', gameDir, templatesDir, source: 'manual' }
 }
 
+async function listTemplates(): Promise<Catalogue> {
+  const { gameDir } = await loadSettings(settingsFile())
+  const templatesDir = gameDir && (await findLiveryTemplatesDir(nodeHost, gameDir))
+  return templatesDir ? scanTemplates(templatesDir) : []
+}
+
 function createWindow(): void {
   const window = new BrowserWindow({
     width: 1400,
@@ -58,6 +65,7 @@ function createWindow(): void {
 
 ipcMain.handle(IPC.locateGame, () => locateGame())
 ipcMain.handle(IPC.chooseGameDir, (event) => chooseGameDir(BrowserWindow.fromWebContents(event.sender)))
+ipcMain.handle(IPC.listTemplates, () => listTemplates())
 
 app.whenReady().then(createWindow)
 app.on('window-all-closed', () => app.quit())
