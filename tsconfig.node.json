@@ -8,5 +8,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["electron.vite.config.mts", "vitest.config.mts", "src/main/**/*", "src/preload/**/*", "src/shared/**/*"]
+  "include": ["electron.vite.config.mts", "vitest.config.mts", "scripts/**/*.ts", "src/main/**/*", "src/preload/**/*", "src/shared/**/*"]
 }

@@ -11,13 +11,15 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "dist:win": "electron-vite build && electron-builder --win",
-    "deploy:win": "scripts/deploy-win.sh"
+    "deploy:win": "scripts/deploy-win.sh",
+    "audit:build": "rolldown scripts/audit-templates.ts --platform node --format cjs --file out/audit/audit-templates.cjs"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "ag-psd": "^34.1.0",
     "electron": "^45.1.0",
     "electron-builder": "^26.18.0",
     "electron-vite": "^6.0.0",
