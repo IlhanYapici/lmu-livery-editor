@@ -87,3 +87,16 @@ The place of the user layers in the template stack, given as the number of templ
 
 **Template segment**:
 The merge of the template content layers below the insertion point ("below") or above it ("above").
+
+**Livery document**:
+Everything the user makes for one template: the user layers, the insertion point and the template visibility. A project file saves one livery document.
+_Avoid_: project (the project is the file), scene
+
+**Fill layer**:
+A user layer of one colour that covers the whole texture.
+
+**Fast preview**:
+The canvas image made from the template segments, the live user layers and the template Levels as a GPU filter.
+
+**Exact preview**:
+The canvas image made by the compositor with the user layers in the template stack. The editor shows it only when the fast preview is not exact for the template.

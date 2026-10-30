@@ -149,3 +149,25 @@ export function renderGuides(psd: Psd, structure: TemplateStructure, decoder: La
     regions: buildRegionMap(structure.regions, decoder, width, height).image
   }
 }
+
+/**
+ * The exact image with the user layers: their pixels go into the template stack at the insertion point as
+ * one layer, and the compositor draws everything. Used when the fast preview is not exact (`fastIsExact`).
+ */
+export function renderExact(
+  psd: Psd,
+  structure: TemplateStructure,
+  options: { insertion: number; visibility: Visibility },
+  user: Raster,
+  decoder: LayerDecoder
+): Raster {
+  const paths = layerPaths(psd.children ?? [])
+  const userLayer: Layer = { name: 'User layers', left: user.left, top: user.top, right: user.left + user.width, bottom: user.top + user.height }
+  const content = [...structure.content.slice(0, options.insertion), userLayer, ...structure.content.slice(options.insertion)]
+  const withUser: LayerDecoder = {
+    pixels: (l) => (l === userLayer ? { width: user.width, height: user.height, data: user.data } : decoder.pixels(l)),
+    mask: (l) => decoder.mask(l)
+  }
+  const isVisible = (l: Layer) => l === userLayer || (options.visibility[paths.get(l) ?? ''] ?? !l.hidden)
+  return compositeLayers(content, { width: psd.width, height: psd.height, decoder: withUser, isVisible }).image
+}

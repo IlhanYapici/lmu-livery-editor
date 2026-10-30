@@ -2,7 +2,7 @@ import type { Layer, PixelData, Psd } from 'ag-psd'
 import { describe, expect, it } from 'vitest'
 import type { LayerDecoder } from './composite'
 import { classifyTemplate } from './roles'
-import { outlineTemplate, renderGuides, renderSegments } from './templateRender'
+import { outlineTemplate, renderExact, renderGuides, renderSegments } from './templateRender'
 
 const W = 2
 const H = 1
@@ -98,5 +98,35 @@ describe('renderGuides', () => {
     expect(Array.from(g.wireframe!.data.slice(0, 4))).toEqual([255, 255, 255, 255])
     expect(Array.from(g.mask!.data.slice(0, 4))).toEqual([0, 0, 0, 255])
     expect(Array.from(g.regions.data.slice(0, 4))).toEqual([0, 0, 0, 255])
+  })
+})
+
+describe('renderExact', () => {
+  it('puts the user pixels at the insertion point, under the decals and the Levels', () => {
+    const psd = ferrari()
+    const user = { left: 0, top: 0, width: W, height: H, data: new Uint8ClampedArray([255, 0, 0, 255, 255, 0, 0, 255]) }
+    // Hide the WEC plate (path 2/0), so that it does not cover the user red.
+    const image = renderExact(psd, classifyTemplate(psd), { insertion: 2, visibility: { '2/0': false } }, user, decoder)
+    // Red (255, 0, 0) through Levels 10..225 gives (225, 10, 10).
+    expect(Array.from(image.data.slice(0, 4))).toEqual([225, 10, 10, 255])
+  })
+
+  it('gives the same pixels as the fast preview when fastIsExact is true', () => {
+    const psd = ferrari()
+    const s = classifyTemplate(psd)
+    const user = { left: 0, top: 0, width: W, height: H, data: new Uint8ClampedArray([0, 0, 255, 128, 0, 0, 0, 0]) }
+    const exact = renderExact(psd, s, { insertion: 1, visibility: {} }, user, decoder)
+    const seg = renderSegments(psd, s, { insertion: 1, visibility: {} }, decoder)
+    expect(seg.fastIsExact).toBe(true)
+    // Fast: below, then user (normal blend), then above, then the table.
+    const fast = (i: number) => {
+      const b = seg.below.data, a = seg.above.data, u = user.data
+      const ua = u[i + 3] / 255, aa = a[i + 3] / 255
+      return [0, 1, 2].map((c) => {
+        const v = b[c + i] * (1 - ua) + u[c + i] * ua
+        return seg.table[Math.round(v * (1 - aa) + a[c + i] * aa)]
+      })
+    }
+    for (const i of [0, 4]) expect(Array.from(exact.data.slice(i, i + 3)).map((v, c) => Math.abs(v - fast(i)[c]) <= 1)).toEqual([true, true, true])
   })
 })

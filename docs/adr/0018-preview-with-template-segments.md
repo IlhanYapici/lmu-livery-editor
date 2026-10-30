@@ -12,7 +12,7 @@ The worker splits the template at the insertion point (`src/shared/psd/templateR
 
 The canvas draws below → user layers → above, and applies the table with an SVG `feComponentTransfer type="table"` filter (`color-interpolation-filters="sRGB"`) on the paint canvas. Chromium runs it on the GPU, and the result is the same as the compositor. Guides are separate canvases: the wireframe uses CSS `mix-blend-mode: screen`.
 
-`fastIsExact` is false when the layers above the insertion point have a Hue/Saturation adjustment, an adjustment with a mask or an opacity, a non-normal blend mode, or a content layer above an adjustment. Then an exact merge in the worker replaces the fast preview after the edits stop (Phase 3c-2). On the Ferrari 296 LMGT3 templates, the fast preview is exact.
+`fastIsExact` is false when the layers above the insertion point have a Hue/Saturation adjustment, an adjustment with a mask or an opacity, a non-normal blend mode, or a content layer above an adjustment. Then, 600 ms after the last edit, the page draws the user layers at template size (`Konva node.toCanvas`) and sends them to the worker; `renderExact` puts them into the template stack at the insertion point and runs the compositor. The exact image replaces the fast preview until the next edit or selection change. Request numbers drop old results. On the Ferrari 296 LMGT3 templates the fast preview is exact; on the Lamborghini SC63 the exact preview takes about 3 s on the development PC.
 
 ## Considered options
 

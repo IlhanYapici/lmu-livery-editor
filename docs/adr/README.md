@@ -45,6 +45,8 @@ What goes into the files that the game reads.
 ### User interface
 - [0016](0016-ui-radix-css-modules-game-style.md) UI: Radix Primitives, CSS Modules, game style
 - [0018](0018-preview-with-template-segments.md) Editor preview: template segments around a movable insertion point
+- [0019](0019-konva-canvas.md) Konva for the editor canvas
+- [0020](0020-document-model-and-history.md) Livery document model and undo history
 
 ## Quick start for developers
 

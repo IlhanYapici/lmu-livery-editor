@@ -5,6 +5,7 @@ import type { TemplateOutline, Visibility } from '../../../shared/psd/templateRe
 export type WorkerRequest =
   | { type: 'load'; url: string }
   | { type: 'segments'; requestId: number; insertion: number; visibility: Visibility }
+  | { type: 'exact'; requestId: number; insertion: number; visibility: Visibility; user: ImageBitmap }
 
 export type LoadStage = 'reading' | 'parsing' | 'guides' | 'segments'
 
@@ -22,4 +23,5 @@ export type WorkerResponse =
       unsupported: Record<string, number>
       ms: number
     }
+  | { type: 'exact'; requestId: number; image: ImageBitmap; ms: number }
   | { type: 'error'; message: string }

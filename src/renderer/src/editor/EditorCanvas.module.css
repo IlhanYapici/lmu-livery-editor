@@ -13,3 +13,9 @@
   width: 0;
   height: 0;
 }
+
+.container[data-tool='rect'],
+.container[data-tool='polygon'],
+.container[data-tool='text'] {
+  cursor: crosshair;
+}

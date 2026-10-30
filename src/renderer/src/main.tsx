@@ -1,6 +1,7 @@
 import '@fontsource/bebas-neue/400.css'
 import '@fontsource/roboto/400.css'
 import '@fontsource/roboto/500.css'
+import '@fontsource/oswald/400.css'
 import './styles/tokens.css'
 import './styles/global.css'
 import { StrictMode } from 'react'

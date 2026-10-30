@@ -2,7 +2,7 @@
 import { getLayerImageData, getLayerMaskImageData, initializeCanvas, readPsd, type Psd } from 'ag-psd'
 import type { LayerDecoder, Raster } from '../../../shared/psd/composite'
 import { classifyTemplate, type TemplateStructure } from '../../../shared/psd/roles'
-import { outlineTemplate, renderGuides, renderSegments } from '../../../shared/psd/templateRender'
+import { outlineTemplate, renderExact, renderGuides, renderSegments } from '../../../shared/psd/templateRender'
 import type { WorkerRequest, WorkerResponse } from './templateMessages'
 
 // Reads one template and makes the canvas bitmaps (ADR-0008: raw read, one layer decoded at a time).
@@ -81,11 +81,24 @@ async function segments(request: Extract<WorkerRequest, { type: 'segments' }>) {
   )
 }
 
+async function exact(request: Extract<WorkerRequest, { type: 'exact' }>) {
+  if (!psd || !structure) return
+  const start = performance.now()
+  const { width, height } = request.user
+  const canvas = new OffscreenCanvas(width, height)
+  const context = canvas.getContext('2d')!
+  context.drawImage(request.user, 0, 0)
+  request.user.close()
+  const user: Raster = { left: 0, top: 0, width, height, data: context.getImageData(0, 0, width, height).data }
+  const image = await toBitmap(renderExact(psd, structure, { insertion: request.insertion, visibility: request.visibility }, user, decoder))
+  post({ type: 'exact', requestId: request.requestId, image, ms: performance.now() - start }, [image])
+}
+
 // Requests run one after the other, in order.
 let queue = Promise.resolve()
 self.onmessage = (event: MessageEvent<WorkerRequest>) => {
   const request = event.data
   queue = queue
-    .then(() => (request.type === 'load' ? load(request.url) : segments(request)))
+    .then(() => (request.type === 'load' ? load(request.url) : request.type === 'segments' ? segments(request) : exact(request)))
     .catch((e: Error) => post({ type: 'error', message: e.message }))
 }

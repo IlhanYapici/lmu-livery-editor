@@ -1,0 +1,102 @@
+.empty {
+  color: var(--color-text-muted);
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 44px;
+  padding: 0 var(--space-1);
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+}
+
+.row:hover {
+  background: var(--color-row-hover);
+}
+
+.selected,
+.selected:hover {
+  background: var(--color-row-selected);
+  box-shadow: inset 3px 0 0 var(--color-text);
+}
+
+.dragging {
+  opacity: 0.4;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  background: none;
+  border: 0;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.icon[data-state='on'] {
+  color: var(--color-text);
+}
+
+.color {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border: 1px solid rgb(255 255 255 / 45%);
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  padding-left: var(--space-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+}
+
+.nameInput {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  background: var(--color-field);
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 15px;
+  user-select: text;
+}
+
+.actions {
+  display: flex;
+  gap: 1px;
+}
+
+.action {
+  width: 24px;
+  height: 26px;
+  background: transparent;
+  border: 0;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.action:hover:not(:disabled) {
+  color: var(--color-text);
+}
+
+.action:disabled {
+  opacity: 0.25;
+  cursor: default;
+}

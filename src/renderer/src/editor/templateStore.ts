@@ -4,6 +4,7 @@ import type { TemplateOutline, Visibility } from '../../../shared/psd/templateRe
 import type { LoadStage, WorkerRequest, WorkerResponse } from './templateMessages'
 
 // State of the template shown in the editor. One store per opened template; it owns the worker.
+// The insertion point and the visibility belong to the document; the editor passes them to render().
 
 export type TemplateState = {
   status: 'loading' | 'ready' | 'error'
@@ -16,13 +17,17 @@ export type TemplateState = {
   segments: { below: ImageBitmap; above: ImageBitmap; table: Uint8Array; fastIsExact: boolean; unsupported: Record<string, number> } | null
   /** True while the worker makes new segments (old ones stay on screen). */
   updating: boolean
-  /** Number of template content layers below the user layers. */
-  insertion: number
-  visibility: Visibility
-  timings: { loadMs: number | null; segmentsMs: number | null }
+  /** Exact image with the user layers (only when the fast preview is not exact); null after any edit. */
+  exact: ImageBitmap | null
+  exactPending: boolean
+  timings: { loadMs: number | null; segmentsMs: number | null; exactMs: number | null }
 
-  setInsertion: (insertion: number) => void
-  setVisible: (path: string, visible: boolean) => void
+  /** Draws the template segments for this insertion point and visibility (debounced). */
+  render: (insertion: number, visibility: Visibility) => void
+  /** Asks for the exact image. `user` is the user layers at template size; the store takes ownership. */
+  requestExact: (user: ImageBitmap, insertion: number, visibility: Visibility) => void
+  /** Drops the exact image (an edit made it old). */
+  clearExact: () => void
   dispose: () => void
 }
 
@@ -30,51 +35,54 @@ const SEGMENTS_DELAY_MS = 250
 
 export function createTemplateStore(fileName: string) {
   const worker = new Worker(new URL('./template.worker.ts', import.meta.url), { type: 'module' })
-  const send = (request: WorkerRequest) => worker.postMessage(request)
-  let lastRequest = 0
+  const send = (request: WorkerRequest, transfer: Transferable[] = []) => worker.postMessage(request, transfer)
+  let lastSegments = 0
+  let lastExact = 0
+  let rendered: string | null = null
   let timer: ReturnType<typeof setTimeout> | undefined
 
-  const store = createStore<TemplateState>()((set, get) => {
-    const requestSegments = () => {
+  const store = createStore<TemplateState>()((set, get) => ({
+    status: 'loading',
+    stage: 'reading',
+    fraction: 0,
+    error: null,
+    outline: null,
+    guides: null,
+    segments: null,
+    updating: false,
+    exact: null,
+    exactPending: false,
+    timings: { loadMs: null, segmentsMs: null, exactMs: null },
+
+    render: (insertion, visibility) => {
+      const key = JSON.stringify([insertion, visibility])
+      if (key === rendered) return
+      rendered = key
       clearTimeout(timer)
       set({ updating: true })
-      timer = setTimeout(() => {
-        const { insertion, visibility } = get()
-        send({ type: 'segments', requestId: ++lastRequest, insertion, visibility })
-      }, SEGMENTS_DELAY_MS)
-    }
+      // The first drawing starts at once; later ones wait for the user to stop clicking.
+      const delay = get().segments ? SEGMENTS_DELAY_MS : 0
+      timer = setTimeout(() => send({ type: 'segments', requestId: ++lastSegments, insertion, visibility }), delay)
+    },
 
-    return {
-      status: 'loading',
-      stage: 'reading',
-      fraction: 0,
-      error: null,
-      outline: null,
-      guides: null,
-      segments: null,
-      updating: false,
-      insertion: 0,
-      visibility: {},
-      timings: { loadMs: null, segmentsMs: null },
+    requestExact: (user, insertion, visibility) => {
+      set({ exactPending: true })
+      send({ type: 'exact', requestId: ++lastExact, insertion, visibility, user }, [user])
+    },
 
-      setInsertion: (insertion) => {
-        const outline = get().outline
-        if (!outline) return
-        set({ insertion: Math.max(1, Math.min(outline.maxInsertion, insertion)) })
-        requestSegments()
-      },
-      setVisible: (path, visible) => {
-        set({ visibility: { ...get().visibility, [path]: visible } })
-        requestSegments()
-      },
-      dispose: () => {
-        clearTimeout(timer)
-        worker.terminate()
-        const { guides, segments } = get()
-        for (const bitmap of [guides?.wireframe, guides?.mask, guides?.regions, segments?.below, segments?.above]) bitmap?.close()
-      }
+    clearExact: () => {
+      lastExact++
+      get().exact?.close()
+      if (get().exact || get().exactPending) set({ exact: null, exactPending: false })
+    },
+
+    dispose: () => {
+      clearTimeout(timer)
+      worker.terminate()
+      const { guides, segments, exact } = get()
+      for (const bitmap of [guides?.wireframe, guides?.mask, guides?.regions, segments?.below, segments?.above, exact]) bitmap?.close()
     }
-  })
+  }))
 
   worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
     const message = event.data
@@ -84,8 +92,7 @@ export function createTemplateStore(fileName: string) {
         store.setState({ stage: message.stage, fraction: message.fraction })
         break
       case 'outline':
-        store.setState({ outline: message.outline, insertion: message.outline.defaultInsertion })
-        send({ type: 'segments', requestId: ++lastRequest, insertion: message.outline.defaultInsertion, visibility: {} })
+        store.setState({ outline: message.outline })
         break
       case 'guides':
         store.setState({
@@ -94,7 +101,7 @@ export function createTemplateStore(fileName: string) {
         })
         break
       case 'segments': {
-        if (message.requestId !== lastRequest) {
+        if (message.requestId !== lastSegments) {
           message.below.close()
           message.above.close()
           break
@@ -112,8 +119,16 @@ export function createTemplateStore(fileName: string) {
         })
         break
       }
+      case 'exact':
+        if (message.requestId !== lastExact) {
+          message.image.close()
+          break
+        }
+        state.exact?.close()
+        store.setState({ exact: message.image, exactPending: false, timings: { ...state.timings, exactMs: message.ms } })
+        break
       case 'error':
-        store.setState({ status: 'error', error: message.message, updating: false })
+        store.setState({ status: 'error', error: message.message, updating: false, exactPending: false })
         break
     }
   }
