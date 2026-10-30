@@ -5,7 +5,7 @@ import type { BlendMode, Layer, LayerEffectsInfo, LevelsAdjustmentChannel, Pixel
 // separable blend modes, the "color overlay" effect and Levels adjustments.
 // Every other feature is skipped and recorded in `unsupported`, so the caller can see what is missing.
 
-export type Raster = { left: number; top: number; width: number; height: number; data: Uint8ClampedArray }
+export type Raster = { left: number; top: number; width: number; height: number; data: Uint8ClampedArray<ArrayBuffer> }
 
 /** Decodes pixels on request, so only one layer is decoded at a time. */
 export interface LayerDecoder {
@@ -402,6 +402,25 @@ function drawLayers(ctx: Context, layers: Layer[], dst: Raster): void {
 
     drawRaster(dst, raster, blendFn(ctx, layer.blendMode), layer.opacity ?? 1, maskCoverage(ctx, layer))
   }
+}
+
+/**
+ * A 256-entry table for adjustments that change each channel alone (Levels, Brightness), or null.
+ * The fast preview applies these tables on the GPU; they give the same result as the compositor.
+ */
+export function adjustmentTable(layer: Layer): Uint8Array | null {
+  const type = layer.adjustment?.type
+  if (type !== 'levels' && type !== 'brightness/contrast') return null
+  const ctx: Context = { width: 0, height: 0, decoder: { pixels: () => undefined, mask: () => undefined }, isVisible: () => true, unsupported: new Map() }
+  const transform = adjustmentTransform(ctx, layer)
+  const table = new Uint8Array(256)
+  const color = [0, 0, 0]
+  for (let v = 0; v < 256; v++) {
+    color[0] = color[1] = color[2] = v / 255
+    transform?.(color)
+    table[v] = Math.round(color[0] * 255)
+  }
+  return table
 }
 
 export function compositeLayers(layers: Layer[], options: CompositeOptions): CompositeResult {

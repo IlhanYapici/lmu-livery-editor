@@ -75,3 +75,15 @@ _Avoid_: material (the material is what the player selects for a region in the g
 
 **Showroom**:
 The livery screen of the game. The user presses RELOAD there to see the exported files on the car.
+
+## Editor
+
+**User layer**:
+A layer that the user adds in the editor: fill, shape or text. It is not in the template.
+_Avoid_: custom layer, my layer
+
+**Insertion point**:
+The place of the user layers in the template stack, given as the number of template content layers below them. The user can move it, but never above the Levels of the template.
+
+**Template segment**:
+The merge of the template content layers below the insertion point ("below") or above it ("above").

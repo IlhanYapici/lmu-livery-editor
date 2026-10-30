@@ -1,8 +1,11 @@
-import { app, BrowserWindow, dialog, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, net, protocol } from 'electron'
+import { stat } from 'node:fs/promises'
 import { join } from 'node:path'
-import { IPC, type Catalogue, type GameLocation } from '../shared/api'
+import { pathToFileURL } from 'node:url'
+import { IPC, TEMPLATE_PROTOCOL, type Catalogue, type GameLocation } from '../shared/api'
 import { loadSettings, saveSettings } from './settings'
 import { findLiveryTemplatesDir, locateGameDir, nodeHost } from './steam'
+import { resolveTemplateUrl } from './templateProtocol'
 import { scanTemplates } from './templates'
 
 const settingsFile = () => join(app.getPath('userData'), 'settings.json')
@@ -40,10 +43,29 @@ async function chooseGameDir(window: BrowserWindow | null): Promise<GameLocation
   return { status: 'found', gameDir, templatesDir, source: 'manual' }
 }
 
+/** The last catalogue sent to the renderer. The template protocol serves only its files. */
+let catalogue: Catalogue = []
+
 async function listTemplates(): Promise<Catalogue> {
   const { gameDir } = await loadSettings(settingsFile())
   const templatesDir = gameDir && (await findLiveryTemplatesDir(nodeHost, gameDir))
-  return templatesDir ? scanTemplates(templatesDir) : []
+  catalogue = templatesDir ? await scanTemplates(templatesDir) : []
+  return catalogue
+}
+
+async function serveTemplate(request: Request): Promise<Response> {
+  const path = resolveTemplateUrl(request.url, catalogue)
+  if (!path) return new Response('Not a catalogue template', { status: 404 })
+  const file = await net.fetch(pathToFileURL(path).toString())
+  // The renderer worker runs on another origin (file:// or the dev server), so allow CORS reads.
+  return new Response(file.body, {
+    status: file.status,
+    headers: {
+      'Content-Type': 'application/octet-stream',
+      'Content-Length': String((await stat(path)).size),
+      'Access-Control-Allow-Origin': '*'
+    }
+  })
 }
 
 function createWindow(): void {
@@ -63,9 +85,16 @@ function createWindow(): void {
   else window.loadFile(join(__dirname, '../renderer/index.html'))
 }
 
+protocol.registerSchemesAsPrivileged([
+  { scheme: TEMPLATE_PROTOCOL, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }
+])
+
 ipcMain.handle(IPC.locateGame, () => locateGame())
 ipcMain.handle(IPC.chooseGameDir, (event) => chooseGameDir(BrowserWindow.fromWebContents(event.sender)))
 ipcMain.handle(IPC.listTemplates, () => listTemplates())
 
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  protocol.handle(TEMPLATE_PROTOCOL, serveTemplate)
+  createWindow()
+})
 app.on('window-all-closed', () => app.quit())

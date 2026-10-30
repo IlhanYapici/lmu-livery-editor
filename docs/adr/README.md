@@ -32,6 +32,7 @@ How the app reads templates and merges layers like Photoshop.
 - [0010](0010-guide-layers-by-position.md) Find guide layers by position first, by name second
 - [0011](0011-brightness-curve-fitted-on-real-data.md) Brightness curve fitted on real data
 - [0012](0012-template-audit-as-reference-test.md) The template audit is the reference test
+- [0017](0017-template-loading-protocol-and-worker.md) Template loading through a custom protocol and a Web Worker
 
 ### Region map and export
 What goes into the files that the game reads.
@@ -43,6 +44,7 @@ What goes into the files that the game reads.
 
 ### User interface
 - [0016](0016-ui-radix-css-modules-game-style.md) UI: Radix Primitives, CSS Modules, game style
+- [0018](0018-preview-with-template-segments.md) Editor preview: template segments around a movable insertion point
 
 ## Quick start for developers
 

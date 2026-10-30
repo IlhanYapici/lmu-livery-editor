@@ -1,0 +1,15 @@
+.container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background:
+    repeating-conic-gradient(#1b1c20 0% 25%, #16171a 0% 50%) 0 0 / 24px 24px;
+}
+
+.filters {
+  position: absolute;
+  width: 0;
+  height: 0;
+}

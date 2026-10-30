@@ -1,0 +1,82 @@
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.hint {
+  margin: 0 0 var(--space-3);
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.row,
+.userRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.row:hover {
+  background: var(--color-row-hover);
+}
+
+.userRow {
+  padding: 0 var(--space-2);
+  background: var(--color-row-selected);
+  border: 1px solid var(--color-border-strong);
+}
+
+.userName {
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: 22px;
+}
+
+.move {
+  width: 32px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.move:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.eye {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  background: none;
+  border: 0;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.eye[data-state='on'] {
+  color: var(--color-text);
+}
+
+.name {
+  flex: 1;
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hidden {
+  color: var(--color-text-muted);
+}
+
+.tag {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  padding-right: var(--space-2);
+}

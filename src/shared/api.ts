@@ -40,3 +40,8 @@ export const IPC = {
   chooseGameDir: 'game:choose',
   listTemplates: 'templates:list'
 } as const
+
+/** Custom protocol for template files: `lmu-template://template/<file name>`. */
+export const TEMPLATE_PROTOCOL = 'lmu-template'
+
+export const templateUrl = (fileName: string) => `${TEMPLATE_PROTOCOL}://template/${encodeURIComponent(fileName)}`
