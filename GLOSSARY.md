@@ -5,8 +5,17 @@ A desktop editor for custom liveries of the game Le Mans Ultimate. It reads the 
 ## Catalogue
 
 **Category**:
-A racing class as the app shows it: Hypercar, LMP2, LMP3, LMGT3, LMGTE. The **class code** is the token in the template file name (`HYPER`, `LMP2`, `LMP3`, `GT3`, `GTE`).
-_Avoid_: class (except for the class code)
+A racing class of cars. The app shows it with its class name and its class badge, as the game does.
+_Avoid_: class (alone)
+
+**Class name**:
+The long name of a category, as on the game selection tabs: Hypercar, LMP2, LMP3, LMGT3, LMGTE.
+
+**Class badge**:
+The short name of a category on its class colour, as next to a car name in the game showroom: HY, P2, P3, GT3, GTE.
+
+**Class code**:
+The token that names the category in a template file name: `HYPER`, `LMP2`, `LMP3`, `GT3`, `GTE`. Users never see it.
 
 **Car**:
 One car model in a category, for example Ferrari 296 LMGT3. A car has one or more variants.

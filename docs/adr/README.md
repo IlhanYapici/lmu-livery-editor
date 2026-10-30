@@ -42,7 +42,7 @@ What goes into the files that the game reads.
 - [0015](0015-windows-build-and-lan-deployment.md) Windows test build from Linux, deployed over SSH
 
 ### User interface
-- [0016](0016-ui-radix-css-modules-game-style.md) UI: Radix Primitives, CSS Modules, game style (proposed)
+- [0016](0016-ui-radix-css-modules-game-style.md) UI: Radix Primitives, CSS Modules, game style
 
 ## Quick start for developers
 

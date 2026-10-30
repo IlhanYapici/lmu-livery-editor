@@ -1,0 +1,44 @@
+.button {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border-strong);
+  padding: 0 var(--space-5);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 120ms, color 120ms;
+}
+
+.normal {
+  height: 40px;
+  font-size: 22px;
+}
+
+.large {
+  height: 56px;
+  min-width: 212px;
+  font-size: 36px;
+}
+
+.primary {
+  background: var(--color-text-soft);
+  color: #111;
+}
+
+.primary:hover:not(:disabled) {
+  background: #ffffff;
+}
+
+.secondary {
+  background: transparent;
+  color: var(--color-text);
+}
+
+.secondary:hover:not(:disabled) {
+  background: rgb(255 255 255 / 10%);
+}
+
+.button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

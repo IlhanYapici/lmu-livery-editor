@@ -154,7 +154,7 @@ describe('buildCatalogue', () => {
         'Mercedes-AMG': ['2025', '2025 ELMS'],
         'Porsche 911 LMGT3 R': ['Base', '2025', '2025 ELMS', '2026']
       },
-      GTE: {
+      LMGTE: {
         'Aston Martin Vantage': ['Base'],
         'Corvette C8.R': ['Base'],
         'Ferrari 488 GTE': ['Base'],
@@ -171,6 +171,16 @@ describe('buildCatalogue', () => {
       const labels = car.variants.map((v) => v.label)
       expect(new Set(labels).size).toBe(labels.length)
     }
+  })
+
+  it('gives each category the long and short class names of the game', () => {
+    expect(catalogueOf(REAL_NAMES).map((c) => `${c.name}/${c.shortName}`)).toEqual([
+      'Hypercar/HY',
+      'LMP2/P2',
+      'LMP3/P3',
+      'LMGT3/GT3',
+      'LMGTE/GTE'
+    ])
   })
 
   it('puts unknown classes and unparsable names under "Other"', () => {

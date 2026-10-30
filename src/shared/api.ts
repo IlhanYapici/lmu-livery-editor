@@ -16,7 +16,15 @@ export type TemplateVariant = {
 
 export type Car = { id: string; name: string; variants: TemplateVariant[] }
 
-export type Category = { id: string; name: string; cars: Car[] }
+export type Category = {
+  /** Class code from the file names: HYPER, LMP2, LMP3, GT3, GTE, or OTHER. */
+  id: string
+  /** Class name, as on the game selection tabs: Hypercar, LMP2, LMP3, LMGT3, LMGTE. */
+  name: string
+  /** Class badge text, as in the game showroom: HY, P2, P3, GT3, GTE. */
+  shortName: string
+  cars: Car[]
+}
 
 export type Catalogue = Category[]
 

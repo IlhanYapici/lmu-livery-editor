@@ -1,0 +1,43 @@
+/* Design tokens. Values sampled from the game menus (see docs/adr/0016). */
+:root {
+  --color-brand: #ff1e44;
+  --color-bg: #0d0d0d;
+  --color-panel: #26262c;
+  --color-panel-translucent: rgb(26 27 34 / 88%);
+  --color-field: #1a1b22;
+  --color-row-hover: #2c2d31;
+  --color-row-selected: #343538;
+  --color-topbar: rgb(69 72 74 / 92%);
+  --color-navy-1: #112843;
+  --color-navy-2: #1e3956;
+  --color-navy-deep: #0a1626;
+  --color-text: #ffffff;
+  --color-text-soft: #f3f4f8;
+  --color-text-muted: #9ea3ad;
+  --color-border: rgb(255 255 255 / 18%);
+  --color-border-strong: #ffffff;
+  --color-focus: #6aa8ff;
+
+  /* Class colours, as in the game. */
+  --class-hy: #e21e19;
+  --class-p2: #005096;
+  --class-p3: #411c52;
+  --class-gt3: #009639;
+  --class-gte: #f08c00;
+  --class-other: #5a5d63;
+
+  --font-display: 'Bebas Neue', 'Arial Narrow', sans-serif;
+  --font-body: 'Roboto', system-ui, sans-serif;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  --topbar-height: 64px;
+  --radius: 2px;
+}

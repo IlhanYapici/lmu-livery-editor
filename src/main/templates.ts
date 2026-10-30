@@ -6,14 +6,15 @@ import type { Catalogue, Category, TemplateVariant } from '../shared/api'
 // The names are not regular (e.g. "FordMustang_EVO_LMGT3", "McLaren720EVO_2025 _ELMS", "Oreca07_ELMS_2025"),
 // so variant tokens are found by value, not by position.
 
-const CLASSES: { code: string; name: string }[] = [
-  { code: 'HYPER', name: 'Hypercar' },
-  { code: 'LMP2', name: 'LMP2' },
-  { code: 'LMP3', name: 'LMP3' },
-  { code: 'GT3', name: 'LMGT3' },
-  { code: 'GTE', name: 'GTE' }
+/** `code`: token in the file names. `name` and `shortName`: as the game shows them (selection tabs, badges). */
+const CLASSES: { code: string; name: string; shortName: string }[] = [
+  { code: 'HYPER', name: 'Hypercar', shortName: 'HY' },
+  { code: 'LMP2', name: 'LMP2', shortName: 'P2' },
+  { code: 'LMP3', name: 'LMP3', shortName: 'P3' },
+  { code: 'GT3', name: 'LMGT3', shortName: 'GT3' },
+  { code: 'GTE', name: 'LMGTE', shortName: 'GTE' }
 ]
-const OTHER_CLASS = { code: 'OTHER', name: 'Other' }
+const OTHER_CLASS = { code: 'OTHER', name: 'Other', shortName: '?' }
 
 const CAR_NAMES: Record<string, string> = {
   'GT3:AstonMartinVantage': 'Aston Martin Vantage',
@@ -129,7 +130,7 @@ export function buildCatalogue(files: TemplateFile[]): Catalogue {
 
     let category = categories.get(cls.code)
     if (!category) {
-      category = { id: cls.code, name: cls.name, cars: [] }
+      category = { id: cls.code, name: cls.name, shortName: cls.shortName, cars: [] }
       categories.set(cls.code, category)
     }
     let car = category.cars.find((c) => c.id === carId)

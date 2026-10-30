@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react'
-import type { Car, Catalogue, Category, GameLocation, TemplateVariant } from '../../shared/api'
-
-// Temporary screens: game detection, then category → car → variant. The game-style UI comes in Phase 3.
-
-const formatSize = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(0)} MB`
+import type { Catalogue, GameLocation } from '../../shared/api'
+import { GameFolderDialog } from './components/GameFolderDialog'
+import { TopBar } from './components/TopBar'
+import { EditorScreen } from './screens/EditorScreen'
+import { LocateScreen } from './screens/LocateScreen'
+import { SelectScreen, type Selection } from './screens/SelectScreen'
+import styles from './App.module.css'
 
 export function App() {
   const [location, setLocation] = useState<GameLocation | null>(null)
   const [catalogue, setCatalogue] = useState<Catalogue | null>(null)
-  const [category, setCategory] = useState<Category | null>(null)
-  const [car, setCar] = useState<Car | null>(null)
-  const [variant, setVariant] = useState<TemplateVariant | null>(null)
+  const [selection, setSelection] = useState<Selection | null>(null)
+  const [editing, setEditing] = useState(false)
 
   useEffect(() => {
     window.lmu.locateGame().then(setLocation)
@@ -19,88 +20,45 @@ export function App() {
   useEffect(() => {
     if (location?.status !== 'found') return
     setCatalogue(null)
-    window.lmu.listTemplates().then(setCatalogue)
+    window.lmu.listTemplates().then((next) => {
+      setCatalogue(next)
+      const first = next[0]?.cars[0]
+      setSelection(first ? { categoryId: next[0].id, carId: first.id, variantId: first.variants[0].id } : null)
+      setEditing(false)
+    })
   }, [location])
 
   const choose = async () => {
     const result = await window.lmu.chooseGameDir()
-    if (result.status === 'cancelled') return
-    setCategory(null)
-    setCar(null)
-    setVariant(null)
-    setLocation(result)
+    if (result.status !== 'cancelled') setLocation(result)
   }
 
-  const back = () => {
-    if (variant) setVariant(null)
-    else if (car) setCar(null)
-    else setCategory(null)
+  if (location?.status !== 'found') {
+    return <LocateScreen location={location?.status === 'not-found' || location?.status === 'invalid' ? location : null} onChoose={choose} />
+  }
+
+  const folderButton = <GameFolderDialog location={location} onChoose={choose} />
+  const category = catalogue?.find((c) => c.id === selection?.categoryId)
+  const car = category?.cars.find((c) => c.id === selection?.carId)
+  const variant = car?.variants.find((v) => v.id === selection?.variantId)
+
+  if (editing && category && car && variant) {
+    return (
+      <div className={styles.app}>
+        <TopBar title="Edit livery" onBack={() => setEditing(false)} right={folderButton} />
+        <EditorScreen category={category} car={car} variant={variant} />
+      </div>
+    )
   }
 
   return (
-    <main style={{ fontFamily: 'system-ui', color: '#eee', background: '#101114', minHeight: '100vh', padding: 24 }}>
-      <h1>LMU Livery Editor</h1>
-
-      {location === null && <p>Searching for Le Mans Ultimate…</p>}
-      {location?.status === 'found' && (
-        <p>
-          Game found ({location.source}): <code>{location.gameDir}</code>
-        </p>
+    <div className={styles.app}>
+      <TopBar title="Select a template" right={folderButton} />
+      {catalogue === null && <p className={styles.message}>Reading templates…</p>}
+      {catalogue?.length === 0 && <p className={styles.message}>No templates in the game folder.</p>}
+      {catalogue && catalogue.length > 0 && selection && (
+        <SelectScreen catalogue={catalogue} selection={selection} onSelect={setSelection} onContinue={() => setEditing(true)} />
       )}
-      {location?.status === 'not-found' && <p>Le Mans Ultimate was not found. Select its install folder.</p>}
-      {location?.status === 'invalid' && (
-        <p>
-          <code>{location.gameDir}</code> has no <code>support/LiveryTemplates</code> folder.
-        </p>
-      )}
-      {location !== null && <button onClick={choose}>Select game folder…</button>}
-
-      {location?.status === 'found' && catalogue === null && <p>Reading templates…</p>}
-      {catalogue && catalogue.length === 0 && <p>No templates found.</p>}
-
-      {catalogue && catalogue.length > 0 && (
-        <section style={{ marginTop: 24 }}>
-          <p>
-            {[category?.name, car?.name, variant?.label].filter(Boolean).join(' › ') || 'Select a category'}
-            {category && (
-              <button style={{ marginLeft: 12 }} onClick={back}>
-                Back
-              </button>
-            )}
-          </p>
-
-          {!category &&
-            catalogue.map((c) => (
-              <button key={c.id} style={{ display: 'block', margin: '4px 0' }} onClick={() => setCategory(c)}>
-                {c.name} ({c.cars.length} cars)
-              </button>
-            ))}
-
-          {category &&
-            !car &&
-            category.cars.map((c) => (
-              <button key={c.id} style={{ display: 'block', margin: '4px 0' }} onClick={() => setCar(c)}>
-                {c.name} ({c.variants.length} variants)
-              </button>
-            ))}
-
-          {car &&
-            !variant &&
-            car.variants.map((v) => (
-              <button key={v.id} style={{ display: 'block', margin: '4px 0' }} onClick={() => setVariant(v)}>
-                {v.label} — {formatSize(v.sizeBytes)}
-              </button>
-            ))}
-
-          {variant && (
-            <p>
-              Template: <code>{variant.path}</code>
-              <br />
-              The editor comes in Phase 3.
-            </p>
-          )}
-        </section>
-      )}
-    </main>
+    </div>
   )
 }
