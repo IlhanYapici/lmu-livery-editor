@@ -92,12 +92,30 @@
   background: var(--class-color);
 }
 
+/* "scroll", not "auto": the bar space is always there, so the rows do not move when a category has
+   fewer tiles. Do not add "scrollbar-color": in Chromium it disables the ::-webkit-scrollbar size. */
 .tiles {
   display: flex;
   gap: 2px;
-  overflow-x: auto;
+  overflow-x: scroll;
   background: rgb(10 22 38 / 55%);
-  scrollbar-color: var(--color-text-soft) transparent;
+}
+
+.tiles::-webkit-scrollbar {
+  height: 8px;
+}
+
+.tiles::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tiles::-webkit-scrollbar-thumb {
+  background: var(--color-text-soft);
+  border-radius: 4px;
+}
+
+.tiles::-webkit-scrollbar-button {
+  display: none;
 }
 
 .carTile,
