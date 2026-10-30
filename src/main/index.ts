@@ -1,28 +1,24 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
-import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { IPC, type GameLocation } from '../shared/api'
 import { loadSettings, saveSettings } from './settings'
-import { findLiveryTemplatesDir, locateGameDir, readSteamPathFromRegistry } from './steam'
+import { findLiveryTemplatesDir, locateGameDir, nodeHost } from './steam'
 
 const settingsFile = () => join(app.getPath('userData'), 'settings.json')
 
 async function locateGame(): Promise<GameLocation> {
   const settings = await loadSettings(settingsFile())
   if (settings.gameDir) {
-    const templatesDir = await findLiveryTemplatesDir(settings.gameDir)
+    const templatesDir = await findLiveryTemplatesDir(nodeHost, settings.gameDir)
     if (templatesDir) return { status: 'found', gameDir: settings.gameDir, templatesDir, source: 'settings' }
   }
 
-  const gameDir = await locateGameDir({
-    platform: process.platform,
-    home: homedir(),
-    readRegistry: readSteamPathFromRegistry
-  })
+  // Auto-detection reads the Windows registry. On other systems the user selects the folder.
+  const gameDir = process.platform === 'win32' ? await locateGameDir(nodeHost) : null
   if (!gameDir) return { status: 'not-found' }
 
   await saveSettings(settingsFile(), { ...settings, gameDir })
-  const templatesDir = (await findLiveryTemplatesDir(gameDir))!
+  const templatesDir = (await findLiveryTemplatesDir(nodeHost, gameDir))!
   return { status: 'found', gameDir, templatesDir, source: 'auto' }
 }
 
@@ -35,7 +31,7 @@ async function chooseGameDir(window: BrowserWindow | null): Promise<GameLocation
   if (result.canceled || result.filePaths.length === 0) return { status: 'cancelled' }
 
   const gameDir = result.filePaths[0]
-  const templatesDir = await findLiveryTemplatesDir(gameDir)
+  const templatesDir = await findLiveryTemplatesDir(nodeHost, gameDir)
   if (!templatesDir) return { status: 'invalid', gameDir }
 
   const settings = await loadSettings(settingsFile())

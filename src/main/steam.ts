@@ -4,94 +4,133 @@ import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { parseVdf, type VdfObject } from './vdf'
 
-export const GAME_FOLDER_NAME = 'Le Mans Ultimate'
+// Game detection for Windows. LMU ships only for Windows; on other systems the user selects the folder.
 
-/** Library paths listed in a libraryfolders.vdf file (new and old formats). */
-export function libraryPathsFromVdf(text: string): string[] {
-  const root = parseVdf(text)
-  const folders = Object.entries(root).find(([key]) => key.toLowerCase() === 'libraryfolders')?.[1]
-  if (!folders || typeof folders === 'string') return []
+export const LMU_APP_ID = '2399420'
+export const DEFAULT_INSTALL_DIR = 'Le Mans Ultimate'
 
-  const paths: string[] = []
-  for (const entry of Object.values(folders)) {
-    // New format: "0" { "path" "..." }. Old format: "1" "D:\\SteamLibrary".
-    if (typeof entry === 'string') paths.push(entry)
-    else if (typeof (entry as VdfObject).path === 'string') paths.push((entry as VdfObject).path as string)
-  }
-  return paths
+const UNINSTALL_KEYS = [
+  `HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App ${LMU_APP_ID}`,
+  `HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App ${LMU_APP_ID}`
+]
+const DEFAULT_STEAM_ROOTS = ['C:\\Program Files (x86)\\Steam', 'C:\\Program Files\\Steam']
+
+/** Access to the file system and the registry. Tests replace it with an in-memory fake. */
+export interface Host {
+  join(...parts: string[]): string
+  /** Throws if the file does not exist. */
+  readFile(path: string): Promise<string>
+  /** Throws if the folder does not exist. */
+  readdir(path: string): Promise<string[]>
+  readRegistryValue(key: string, name: string): Promise<string | null>
 }
 
-export function steamRootCandidates(platform: NodeJS.Platform, home: string, registryPath: string | null): string[] {
-  if (platform === 'win32') {
-    return [registryPath, 'C:\\Program Files (x86)\\Steam', 'C:\\Program Files\\Steam'].filter(
-      (p): p is string => !!p
-    )
-  }
-  if (platform === 'darwin') return [join(home, 'Library/Application Support/Steam')]
-  return [
-    join(home, '.local/share/Steam'),
-    join(home, '.steam/steam'),
-    join(home, '.steam/root'),
-    join(home, '.var/app/com.valvesoftware.Steam/.local/share/Steam'),
-    join(home, 'snap/steam/common/.local/share/Steam')
-  ]
-}
-
-/** Finds a child entry by name, ignoring case (Linux file systems are case-sensitive). */
-async function findChild(dir: string, name: string): Promise<string | null> {
+async function readRegistryValue(key: string, name: string): Promise<string | null> {
   try {
-    const entries = await readdir(dir)
-    const match = entries.find((e) => e.toLowerCase() === name.toLowerCase())
-    return match ? join(dir, match) : null
-  } catch {
-    return null
-  }
-}
-
-/** Returns the LiveryTemplates folder of a game install, or null if the folder is not a game install. */
-export async function findLiveryTemplatesDir(gameDir: string): Promise<string | null> {
-  const support = await findChild(gameDir, 'support')
-  return support ? findChild(support, 'LiveryTemplates') : null
-}
-
-export async function readSteamPathFromRegistry(): Promise<string | null> {
-  try {
-    const { stdout } = await promisify(execFile)('reg', [
-      'query',
-      'HKCU\\Software\\Valve\\Steam',
-      '/v',
-      'SteamPath'
-    ])
-    const match = stdout.match(/SteamPath\s+REG_\w+\s+(.+)/)
+    const { stdout } = await promisify(execFile)('reg', ['query', key, '/v', name])
+    const match = stdout.match(new RegExp(`^\\s*${name}\\s+REG_\\w+\\s+(.+)$`, 'm'))
     return match ? match[1].trim() : null
   } catch {
     return null
   }
 }
 
-export type LocateOptions = {
-  platform: NodeJS.Platform
-  home: string
-  readRegistry?: () => Promise<string | null>
+export const nodeHost: Host = {
+  join,
+  readFile: (path) => readFile(path, 'utf8'),
+  readdir: (path) => readdir(path),
+  readRegistryValue
 }
 
-export async function locateGameDir({ platform, home, readRegistry }: LocateOptions): Promise<string | null> {
-  const registryPath = platform === 'win32' && readRegistry ? await readRegistry() : null
-  const libraries = new Set<string>()
+export type SteamLibrary = { path: string; appIds: string[] }
 
-  for (const root of steamRootCandidates(platform, home, registryPath)) {
-    libraries.add(root)
+/** Libraries listed in a libraryfolders.vdf file (new and old formats). */
+export function librariesFromVdf(text: string): SteamLibrary[] {
+  const root = parseVdf(text)
+  const folders = Object.entries(root).find(([key]) => key.toLowerCase() === 'libraryfolders')?.[1]
+  if (!folders || typeof folders === 'string') return []
+
+  const libraries: SteamLibrary[] = []
+  for (const [key, entry] of Object.entries(folders)) {
+    // New format: "0" { "path" "..." "apps" { ... } }. Old format: "1" "D:\\SteamLibrary".
+    if (typeof entry === 'string') {
+      if (/^\d+$/.test(key)) libraries.push({ path: entry, appIds: [] })
+    } else if (typeof entry.path === 'string') {
+      const apps = entry.apps
+      libraries.push({ path: entry.path, appIds: apps && typeof apps !== 'string' ? Object.keys(apps as VdfObject) : [] })
+    }
+  }
+  return libraries
+}
+
+/** Finds a child entry by name, ignoring case. */
+async function findChild(host: Host, dir: string, name: string): Promise<string | null> {
+  try {
+    const match = (await host.readdir(dir)).find((e) => e.toLowerCase() === name.toLowerCase())
+    return match ? host.join(dir, match) : null
+  } catch {
+    return null
+  }
+}
+
+/** Returns the LiveryTemplates folder of a game install, or null if the folder is not a game install. */
+export async function findLiveryTemplatesDir(host: Host, gameDir: string): Promise<string | null> {
+  const support = await findChild(host, gameDir, 'support')
+  return support ? findChild(host, support, 'LiveryTemplates') : null
+}
+
+async function installDirFromManifest(host: Host, library: string): Promise<string> {
+  try {
+    const manifest = parseVdf(await host.readFile(host.join(library, 'steamapps', `appmanifest_${LMU_APP_ID}.acf`)))
+    const state = manifest.AppState
+    if (state && typeof state !== 'string' && typeof state.installdir === 'string') return state.installdir
+  } catch {
+    // No manifest in this library.
+  }
+  return DEFAULT_INSTALL_DIR
+}
+
+/** Steam libraries to search, the ones that list LMU first. */
+async function steamLibraries(host: Host): Promise<string[]> {
+  const roots = [
+    await host.readRegistryValue('HKCU\\Software\\Valve\\Steam', 'SteamPath'),
+    await host.readRegistryValue('HKLM\\SOFTWARE\\WOW6432Node\\Valve\\Steam', 'InstallPath'),
+    ...DEFAULT_STEAM_ROOTS
+  ].filter((p): p is string => !!p)
+
+  const withApp: string[] = []
+  const others: string[] = []
+  for (const root of roots) {
+    others.push(root)
     try {
-      const vdf = await readFile(join(root, 'steamapps', 'libraryfolders.vdf'), 'utf8')
-      for (const lib of libraryPathsFromVdf(vdf)) libraries.add(lib)
+      for (const lib of librariesFromVdf(await host.readFile(host.join(root, 'steamapps', 'libraryfolders.vdf')))) {
+        ;(lib.appIds.includes(LMU_APP_ID) ? withApp : others).push(lib.path)
+      }
     } catch {
       // No Steam install at this root.
     }
   }
 
-  for (const lib of libraries) {
-    const gameDir = join(lib, 'steamapps', 'common', GAME_FOLDER_NAME)
-    if (await findLiveryTemplatesDir(gameDir)) return gameDir
+  // Normalise slashes (the registry gives "c:/program files (x86)/steam") and remove duplicates.
+  const seen = new Set<string>()
+  const libraries: string[] = []
+  for (const path of [...withApp, ...others].map((p) => host.join(p))) {
+    if (seen.has(path.toLowerCase())) continue
+    seen.add(path.toLowerCase())
+    libraries.push(path)
+  }
+  return libraries
+}
+
+export async function locateGameDir(host: Host): Promise<string | null> {
+  for (const key of UNINSTALL_KEYS) {
+    const location = await host.readRegistryValue(key, 'InstallLocation')
+    if (location && (await findLiveryTemplatesDir(host, location))) return host.join(location)
+  }
+
+  for (const library of await steamLibraries(host)) {
+    const gameDir = host.join(library, 'steamapps', 'common', await installDirFromManifest(host, library))
+    if (await findLiveryTemplatesDir(host, gameDir)) return gameDir
   }
   return null
 }
