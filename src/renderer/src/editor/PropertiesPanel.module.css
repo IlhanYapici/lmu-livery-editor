@@ -129,3 +129,10 @@
 .selectItem[data-highlighted] {
   background: var(--color-row-selected);
 }
+
+.warning {
+  padding: var(--space-2);
+  border-left: 3px solid var(--class-gte);
+  background: rgb(240 140 0 / 10%);
+  font-size: 13px;
+}

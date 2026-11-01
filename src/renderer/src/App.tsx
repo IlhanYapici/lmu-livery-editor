@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Catalogue, GameLocation } from '../../shared/api'
-import { isValidationKey, parseProject, type ProjectError } from '../../shared/project'
+import { isValidationKey, parseProject, verifyAssets, type ProjectError } from '../../shared/project'
 import { Button } from './components/Button'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { GameFolderDialog } from './components/GameFolderDialog'
@@ -21,6 +21,9 @@ function projectErrorText(error: ProjectError): string {
       return t('project.error.newerVersion', { version: error.version })
     case 'field':
       return t('project.error.field', { path: error.path, message: isValidationKey(error.message) ? t(error.message) : error.message })
+    case 'assetHash':
+    case 'assetTooLarge':
+      return t(`project.error.${error.code}`, { id: error.id.slice(0, 12) })
     default:
       return t(`project.error.${error.code}`)
   }
@@ -73,6 +76,10 @@ export function App() {
     const parsed = parseProject(result.text)
     if (!parsed.ok)
       return setMessage({ title: t('project.cannotOpen'), lines: [t('project.invalid', { file: result.fileName }), ...parsed.errors.slice(0, 8).map(projectErrorText)] })
+
+    const assetErrors = await verifyAssets(parsed.project.document)
+    if (assetErrors.length)
+      return setMessage({ title: t('project.cannotOpen'), lines: [t('project.invalid', { file: result.fileName }), ...assetErrors.slice(0, 8).map(projectErrorText)] })
 
     const { template, document } = parsed.project
     for (const category of catalogue)

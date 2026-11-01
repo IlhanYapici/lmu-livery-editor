@@ -11,9 +11,9 @@ const TOOLS: { tool: Tool; key: string; icon: string }[] = [
   { tool: 'text', key: 'T', icon: 'M5 5h14M12 5v14' }
 ]
 
-type Props = { tool: Tool; onTool: (tool: Tool) => void; onAddFill: () => void }
+type Props = { tool: Tool; onTool: (tool: Tool) => void; onAddFill: () => void; onAddImage: () => void }
 
-export function Toolbar({ tool, onTool, onAddFill }: Props) {
+export function Toolbar({ tool, onTool, onAddFill, onAddImage }: Props) {
   const { t } = useTranslation()
   return (
     <Tooltip.Provider delayDuration={300}>
@@ -29,6 +29,14 @@ export function Toolbar({ tool, onTool, onAddFill }: Props) {
             </Tip>
           ))}
         </ToggleGroup.Root>
+        <Tip text={`${t('tools.imageHint')} · I`}>
+          <button className={styles.button} onClick={onAddImage} aria-label={t('tools.image')}>
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+              <path d="M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+              <circle cx="15.5" cy="9" r="1.5" fill="currentColor" />
+            </svg>
+          </button>
+        </Tip>
         <Tip text={t('tools.addFillHint')}>
           <button className={styles.button} onClick={onAddFill} aria-label={t('tools.addFill')}>
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>

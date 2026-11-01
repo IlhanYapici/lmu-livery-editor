@@ -127,7 +127,9 @@
     "polygon": "Polygon (click points, double-click or Enter to close)",
     "text": "Text (click to place)",
     "addFill": "Add fill",
-    "addFillHint": "Add a fill layer at the bottom of your layers"
+    "addFillHint": "Add a fill layer at the bottom of your layers",
+    "image": "Image",
+    "imageHint": "Import an image (PNG, JPEG, WebP, SVG). You can also drop or paste images on the canvas."
   },
   "layers": {
     "label": "Your layers",
@@ -168,7 +170,9 @@
     "size": "Size",
     "outline": "Outline",
     "outlineColour": "Outline colour",
-    "outlineWidth": "Outline width"
+    "outlineWidth": "Outline width",
+    "source": "Source image: {{width}} × {{height}} px",
+    "upscaled": "The image is enlarged {{factor}} times: it can look blurred in game. Use a larger image or an SVG."
   },
   "template": {
     "hint": "Your layers stay below the Levels of the template, so the game colour range applies to them.",
@@ -222,5 +226,14 @@
     "base64": "must be base64 data",
     "assetId": "must be the SHA-256 of the image (64 hex characters)",
     "missingAsset": "refers to an image that is not in the file"
+  },
+  "images": {
+    "errorTitle": "Some images were not imported",
+    "error": {
+      "unsupportedType": "{{file}}: this file type is not supported (use PNG, JPEG, WebP or SVG).",
+      "tooLarge": "{{file}}: the file is larger than 25 MB.",
+      "tooManyPixels": "{{file}}: the image is larger than 8192 × 8192 pixels.",
+      "decodeFailed": "{{file}}: the image cannot be read."
+    }
   }
 }

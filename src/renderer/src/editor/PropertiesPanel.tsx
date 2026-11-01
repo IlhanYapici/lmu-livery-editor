@@ -2,7 +2,7 @@ import { Select, Slider } from 'radix-ui'
 import { useEffect, useState } from 'react'
 import { HexColorInput, HexColorPicker } from 'react-colorful'
 import { useTranslation } from 'react-i18next'
-import { FONTS, type UserLayer } from './document'
+import { FONTS, type Asset, type UserLayer } from './document'
 import type { DocumentState } from './documentStore'
 import styles from './PropertiesPanel.module.css'
 
@@ -10,10 +10,12 @@ type Props = Pick<DocumentState, 'updateLayer' | 'beginGesture' | 'endGesture'> 
   layer: UserLayer
   /** The template table (Levels, Brightness) to show the colour as the game shows it. */
   table: Uint8Array | null
+  /** For image layers: the image asset (source size). */
+  asset?: Asset
 }
 
 /** Properties of the selected layer. A drag on the colour picker or the slider is one history step. */
-export function PropertiesPanel({ layer, table, updateLayer, beginGesture, endGesture }: Props) {
+export function PropertiesPanel({ layer, table, asset, updateLayer, beginGesture, endGesture }: Props) {
   const { t } = useTranslation()
   const update = (patch: Partial<UserLayer>) => updateLayer(layer.id, patch)
   const transform = (patch: Partial<UserLayer['transform']>) => update({ transform: { ...layer.transform, ...patch } })
@@ -82,6 +84,16 @@ export function PropertiesPanel({ layer, table, updateLayer, beginGesture, endGe
         </div>
       )}
 
+      {layer.kind === 'image' && (
+        <>
+          <div className={styles.grid}>
+            <NumberField label={t('properties.width')} value={layer.width} min={1} onCommit={(width) => update({ width })} />
+            <NumberField label={t('properties.height')} value={layer.height} min={1} onCommit={(height) => update({ height })} />
+          </div>
+          {asset && <ImageInfo layer={layer} asset={asset} />}
+        </>
+      )}
+
       {layer.kind === 'text' && (
         <>
           <label className={styles.label}>
@@ -130,6 +142,22 @@ export function PropertiesPanel({ layer, table, updateLayer, beginGesture, endGe
         </>
       )}
     </section>
+  )
+}
+
+/** Source size, and a warning when a raster image is enlarged so much that it looks blurred in game. */
+function ImageInfo({ layer, asset }: { layer: Extract<UserLayer, { kind: 'image' }>; asset: Asset }) {
+  const { t } = useTranslation()
+  const factor = Math.max((layer.width * Math.abs(layer.transform.scaleX)) / asset.width, (layer.height * Math.abs(layer.transform.scaleY)) / asset.height)
+  return (
+    <>
+      <span className={styles.note}>{t('properties.source', { width: asset.width, height: asset.height })}</span>
+      {asset.type !== 'image/svg+xml' && factor > 1.5 && (
+        <span className={styles.warning} role="status">
+          {t('properties.upscaled', { factor: new Intl.NumberFormat(document.documentElement.lang || 'en', { maximumFractionDigits: 1 }).format(factor) })}
+        </span>
+      )}
+    </>
   )
 }
 

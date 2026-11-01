@@ -1,17 +1,19 @@
 import { Toggle } from 'radix-ui'
 import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
-import type { UserLayer } from './document'
+import { assetUrl } from './assets'
+import type { LiveryDocument, UserLayer } from './document'
 import type { DocumentState } from './documentStore'
 import { RegionSelect } from './RegionSelect'
 import styles from './LayersPanel.module.css'
 
 type Props = Pick<DocumentState, 'selectedId' | 'select' | 'updateLayer' | 'removeLayer' | 'duplicateLayer' | 'moveLayer'> & {
   layers: UserLayer[]
+  assets: LiveryDocument['assets']
 }
 
 /** User layers, top to bottom. Drag a row to reorder it. */
-export function LayersPanel({ layers, selectedId, select, updateLayer, removeLayer, duplicateLayer, moveLayer }: Props) {
+export function LayersPanel({ layers, assets, selectedId, select, updateLayer, removeLayer, duplicateLayer, moveLayer }: Props) {
   const { t } = useTranslation()
   const [dragged, setDragged] = useState<string | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
@@ -48,7 +50,7 @@ export function LayersPanel({ layers, selectedId, select, updateLayer, removeLay
                 <path d={layer.locked ? 'M8 11V8a4 4 0 0 1 8 0v3' : 'M8 11V8a4 4 0 0 1 7.5-2'} fill="none" stroke="currentColor" strokeWidth="1.6" />
               </svg>
             </Toggle.Root>
-            <span className={styles.color} style={{ background: 'color' in layer ? layer.color : 'transparent' }} />
+            <span className={styles.color} style={layer.kind === 'image' && assets[layer.assetId] ? { backgroundImage: `url(${assetUrl(layer.assetId, assets[layer.assetId])})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' } : { background: 'color' in layer ? layer.color : 'transparent' }} />
             {renaming === layer.id ? (
               <input
                 className={styles.nameInput}

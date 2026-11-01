@@ -1,6 +1,6 @@
 import { createStore } from 'zustand/vanilla'
 import { i18n } from '../i18n'
-import { createLayer, emptyDocument, newId, type LayerKind, type LiveryDocument, type UserLayer } from './document'
+import { createLayer, emptyDocument, newId, type Asset, type ImageLayer, type LayerKind, type LiveryDocument, type UserLayer } from './document'
 
 // The document with an undo history. Each action is one step. A gesture (drag, transform, colour drag)
 // is one step too: beginGesture() keeps the start state, and endGesture() saves it once.
@@ -23,6 +23,8 @@ export type DocumentState = {
   select: (id: string | null) => void
   /** Adds a layer at `index` (default: on top) and selects it. */
   addLayer: (kind: LayerKind, props?: Partial<UserLayer>, index?: number) => string
+  /** Adds an image layer on top, and its asset if the document does not have it yet. One history step. */
+  addImage: (id: string, asset: Asset, props: Partial<ImageLayer>) => string
   /** Inside a gesture, changes do not make history steps. */
   updateLayer: (id: string, patch: Partial<UserLayer>) => void
   removeLayer: (id: string) => void
@@ -78,6 +80,15 @@ export function createDocumentStore(templateId: string, initial?: InitialProject
           const at = index ?? layers.length
           return [...layers.slice(0, at), layer, ...layers.slice(at)]
         }), layer.id)
+        return layer.id
+      },
+
+      addImage: (id, asset, props) => {
+        const layer = createLayer('image', get().doc.layers, { ...props, assetId: id })
+        commit(
+          (doc) => ({ ...doc, assets: doc.assets[id] ? doc.assets : { ...doc.assets, [id]: asset }, layers: [...doc.layers, layer] }),
+          layer.id
+        )
         return layer.id
       },
 

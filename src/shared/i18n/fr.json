@@ -127,7 +127,9 @@
     "polygon": "Polygone (cliquez les points, double-clic ou Entrée pour fermer)",
     "text": "Texte (cliquez pour placer)",
     "addFill": "Ajouter un fond",
-    "addFillHint": "Ajouter un calque de fond sous vos calques"
+    "addFillHint": "Ajouter un calque de fond sous vos calques",
+    "image": "Image",
+    "imageHint": "Importer une image (PNG, JPEG, WebP, SVG). Vous pouvez aussi déposer ou coller des images sur la zone de dessin."
   },
   "layers": {
     "label": "Vos calques",
@@ -168,7 +170,9 @@
     "size": "Taille",
     "outline": "Contour",
     "outlineColour": "Couleur du contour",
-    "outlineWidth": "Épaisseur du contour"
+    "outlineWidth": "Épaisseur du contour",
+    "source": "Image source : {{width}} × {{height}} px",
+    "upscaled": "L'image est agrandie {{factor}} fois : elle peut paraître floue en jeu. Utilisez une image plus grande ou un SVG."
   },
   "template": {
     "hint": "Vos calques restent sous les niveaux du modèle, pour que la plage de couleurs du jeu s'applique.",
@@ -222,5 +226,14 @@
     "base64": "doit être des données base64",
     "assetId": "doit être le SHA-256 de l'image (64 caractères hexadécimaux)",
     "missingAsset": "fait référence à une image absente du fichier"
+  },
+  "images": {
+    "errorTitle": "Certaines images n'ont pas été importées",
+    "error": {
+      "unsupportedType": "{{file}} : ce type de fichier n'est pas pris en charge (utilisez PNG, JPEG, WebP ou SVG).",
+      "tooLarge": "{{file}} : le fichier dépasse 25 Mo.",
+      "tooManyPixels": "{{file}} : l'image dépasse 8192 × 8192 pixels.",
+      "decodeFailed": "{{file}} : l'image ne peut pas être lue."
+    }
   }
 }

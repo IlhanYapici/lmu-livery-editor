@@ -1,8 +1,9 @@
 import type Konva from 'konva'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import { Group, Image as KonvaImage, Layer, Line, Rect, Stage, Text, Transformer } from 'react-konva'
 import { REGIONS } from '../../../shared/psd/regions'
-import { FONTS, type UserLayer } from './document'
+import { loadAssetImage, regionShape } from './assets'
+import { FONTS, type LiveryDocument, type UserLayer } from './document'
 import type { DocumentState } from './documentStore'
 import type { TemplateState } from './templateStore'
 import styles from './EditorCanvas.module.css'
@@ -17,6 +18,7 @@ export type Tool = 'select' | 'rect' | 'polygon' | 'text'
 
 type DocumentProps = Pick<DocumentState, 'selectedId' | 'select' | 'addLayer' | 'updateLayer' | 'beginGesture' | 'endGesture'> & {
   layers: UserLayer[]
+  assets: LiveryDocument['assets']
 }
 
 type Props = {
@@ -29,16 +31,37 @@ type Props = {
   /** Changes when the user asks to fit the template in the view. */
   fitSignal: number
   onZoomChange?: (scale: number) => void
+  /** Image files dropped on the canvas, with the drop point in template pixels. */
+  onDropFiles: (files: File[], at: { x: number; y: number }) => void
+  /** Gives the centre of the visible area in template pixels (where pasted or picked images go). */
+  viewCenterRef: RefObject<(() => { x: number; y: number }) | null>
 }
 
 const FILTER_ID = 'lmu-template-table'
 const MIN_SCALE = 0.05
 const MAX_SCALE = 8
 const REGION_RGB = Object.fromEntries(REGIONS.map((r) => [r.id, `rgb(${r.rgb.join(' ')})`]))
+const REGION_TRIPLET = Object.fromEntries(REGIONS.map((r) => [r.id, r.rgb]))
+
+/** Decoded images of the document assets; the map grows as images finish decoding. */
+function useAssetImages(assets: LiveryDocument['assets']): Record<string, HTMLImageElement> {
+  const [images, setImages] = useState<Record<string, HTMLImageElement>>({})
+  useEffect(() => {
+    let alive = true
+    for (const [id, asset] of Object.entries(assets)) {
+      if (images[id]) continue
+      loadAssetImage(id, asset).then((image) => alive && setImages((all) => ({ ...all, [id]: image })))
+    }
+    return () => {
+      alive = false
+    }
+  }, [assets])
+  return images
+}
 
 type Draft = { kind: 'rect'; x0: number; y0: number; x1: number; y1: number } | { kind: 'polygon'; points: number[]; cursor: [number, number] | null }
 
-export function EditorCanvas({ template, document: doc, tool, onToolDone, view, guides, fitSignal, onZoomChange }: Props) {
+export function EditorCanvas({ template, document: doc, tool, onToolDone, view, guides, fitSignal, onZoomChange, onDropFiles, viewCenterRef }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ width: 0, height: 0 })
   const [camera, setCamera] = useState({ scale: 0.2, x: 0, y: 0 })
@@ -52,6 +75,9 @@ export function EditorCanvas({ template, document: doc, tool, onToolDone, view, 
   const width = template.outline?.width ?? 4096
   const height = template.outline?.height ?? 4096
   const hasSize = size.width > 0
+  const assetImages = useAssetImages(doc.assets)
+
+  viewCenterRef.current = () => ({ x: (size.width / 2 - camera.x) / camera.scale, y: (size.height / 2 - camera.y) / camera.scale })
 
   useLayoutEffect(() => {
     const element = containerRef.current!
@@ -92,7 +118,7 @@ export function EditorCanvas({ template, document: doc, tool, onToolDone, view, 
     const layer = doc.layers.find((l) => l.id === doc.selectedId)
     const node = layer && layer.kind !== 'fill' && !layer.locked && layer.visible ? userRef.current?.findOne(`#${layer.id}`) : null
     transformer.nodes(node && tool === 'select' ? [node] : [])
-  }, [doc.selectedId, doc.layers, tool])
+  }, [doc.selectedId, doc.layers, tool, assetImages]) // assetImages: an image node exists only after its image is decoded.
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -198,13 +224,26 @@ export function EditorCanvas({ template, document: doc, tool, onToolDone, view, 
         width={width}
         height={height}
         color={regionColors ? REGION_RGB[layer.region] : 'color' in layer ? layer.color : ''}
+        image={layer.kind === 'image' && assetImages[layer.assetId] ? (regionColors ? regionShape(layer.assetId, assetImages[layer.assetId], REGION_TRIPLET[layer.region]) : assetImages[layer.assetId]) : undefined}
         interactive={!regionColors && tool === 'select'}
         document={doc}
       />
     ))
 
   return (
-    <div ref={containerRef} className={styles.container} data-tool={tool}>
+    <div
+      ref={containerRef}
+      className={styles.container}
+      data-tool={tool}
+      onDragOver={(e) => e.dataTransfer.types.includes('Files') && e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault()
+        const files = [...e.dataTransfer.files]
+        if (!files.length) return
+        const box = containerRef.current!.getBoundingClientRect()
+        onDropFiles(files, { x: (e.clientX - box.left - camera.x) / camera.scale, y: (e.clientY - box.top - camera.y) / camera.scale })
+      }}
+    >
       <svg className={styles.filters} aria-hidden>
         <filter id={FILTER_ID} colorInterpolationFilters="sRGB">
           <feComponentTransfer>
@@ -277,7 +316,18 @@ export function EditorCanvas({ template, document: doc, tool, onToolDone, view, 
   )
 }
 
-function UserLayerNode({ layer, width, height, color, interactive, document: doc }: { layer: UserLayer; width: number; height: number; color: string; interactive: boolean; document: DocumentProps }) {
+type NodeProps = {
+  layer: UserLayer
+  width: number
+  height: number
+  color: string
+  /** For image layers: the decoded image, or its region shape in the region view. */
+  image?: CanvasImageSource
+  interactive: boolean
+  document: DocumentProps
+}
+
+function UserLayerNode({ layer, width, height, color, image, interactive, document: doc }: NodeProps) {
   const movable = interactive && !layer.locked && layer.kind !== 'fill'
   const common = {
     id: layer.id,
@@ -305,7 +355,7 @@ function UserLayerNode({ layer, width, height, color, interactive, document: doc
     case 'polygon':
       return <Line {...common} points={layer.points} closed fill={color} />
     case 'image':
-      return null // Drawn in the next step (image layers).
+      return image ? <KonvaImage {...common} image={image} width={layer.width} height={layer.height} /> : null
     case 'text':
       return (
         <Text

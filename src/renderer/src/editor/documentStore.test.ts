@@ -113,4 +113,25 @@ describe('documentStore', () => {
     expect(hasUnsavedChanges(store.getState())).toBe(false)
     expect(store.getState().past).toEqual([])
   })
+
+  it('adds an image layer and its asset in one step, and stores the same asset once', () => {
+    const store = createDocumentStore('t')
+    const s = store.getState()
+    const asset = { type: 'image/png' as const, data: 'AAAA', width: 3, height: 1 }
+    const id = 'a'.repeat(64)
+    s.addImage(id, asset, { width: 300, height: 100 })
+    const assetsAfterFirst = store.getState().doc.assets
+    s.addImage(id, asset, { width: 300, height: 100 })
+    const { doc, past } = store.getState()
+    expect(doc.layers.map((l) => [l.kind, l.region, l.name])).toEqual([
+      ['image', 'stickers', 'Image 1'],
+      ['image', 'stickers', 'Image 2']
+    ])
+    expect(doc.assets).toBe(assetsAfterFirst)
+    expect(Object.keys(doc.assets)).toEqual([id])
+    expect(past.length).toBe(2)
+    s.undo()
+    s.undo()
+    expect(store.getState().doc.assets).toEqual({})
+  })
 })

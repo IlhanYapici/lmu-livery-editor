@@ -3,13 +3,14 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useStore } from 'zustand'
 import type { Car, Category, TemplateVariant } from '../../../shared/api'
-import { serializeProject } from '../../../shared/project'
+import { ASSET_TYPES, serializeProject } from '../../../shared/project'
 import { REGIONS } from '../../../shared/psd/regions'
 import { Button } from '../components/Button'
 import { ClassBadge } from '../components/ClassBadge'
 import { createDocumentStore, hasUnsavedChanges, type DocumentStore, type InitialProject } from '../editor/documentStore'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { EditorCanvas, type CanvasView, type GuideOptions, type Tool } from '../editor/EditorCanvas'
+import { importImageFile, importSize } from '../editor/assets'
 import { rasterizeRegions, rasterizeSkin } from '../editor/rasterize'
 import { LayersPanel } from '../editor/LayersPanel'
 import { PropertiesPanel } from '../editor/PropertiesPanel'
@@ -92,7 +93,7 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
     if (!template.segments || template.segments.fastIsExact || template.updating || insertion === null) return
     const { width, height } = template.outline!
     const timer = setTimeout(async () => {
-      template.requestExact(await rasterizeSkin(d.doc.layers, width, height), insertion, d.doc.templateVisibility)
+      template.requestExact(await rasterizeSkin(d.doc.layers, d.doc.assets, width, height), insertion, d.doc.templateVisibility)
     }, EXACT_DELAY_MS)
     return () => clearTimeout(timer)
   }, [d.doc, d.selectedId, template.segments, template.updating, insertion])
@@ -139,7 +140,7 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
     const { width, height } = template.outline
     const { doc } = documentStore.getState()
     try {
-      const [user, userRegions] = await Promise.all([rasterizeSkin(doc.layers, width, height), rasterizeRegions(doc.layers, width, height)])
+      const [user, userRegions] = await Promise.all([rasterizeSkin(doc.layers, doc.assets, width, height), rasterizeRegions(doc.layers, doc.assets, width, height)])
       const files = await template.exportFiles(user, userRegions, insertion, doc.templateVisibility)
       setWriting(true)
       const result = target === 'game' ? await window.lmu.exportToGame(files.skin, files.region) : await window.lmu.exportToFolder(files.skin, files.region)
@@ -159,6 +160,47 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
       setReport({ title: t('export.failedTitle'), lines: [(error as Error).message] })
     }
   }
+
+  const fileInput = useRef<HTMLInputElement>(null)
+  const viewCenter = useRef<(() => { x: number; y: number }) | null>(null)
+
+  /** Imports image files as image layers, centred on `at` (default: the centre of the visible area). */
+  const importImages = useCallback(
+    async (files: File[], at?: { x: number; y: number }) => {
+      const point = at ?? viewCenter.current?.() ?? { x: 2048, y: 2048 }
+      const errors: string[] = []
+      for (const file of files) {
+        const result = await importImageFile(file)
+        if (typeof result === 'string') {
+          errors.push(t(`images.error.${result}`, { file: file.name }))
+          continue
+        }
+        const size = importSize(result.asset.width, result.asset.height)
+        const name = file.name.replace(/\.[^.]+$/, '').slice(0, 200) || undefined
+        documentStore.getState().addImage(result.id, result.asset, {
+          ...size,
+          ...(name ? { name } : {}),
+          transform: { x: point.x - size.width / 2, y: point.y - size.height / 2, rotation: 0, scaleX: 1, scaleY: 1 }
+        })
+      }
+      if (errors.length) setReport({ title: t('images.errorTitle'), lines: errors })
+      if (files.length > errors.length) setTab('layers')
+    },
+    [documentStore, t]
+  )
+
+  // Paste an image (Ctrl+V), except while the user types in a field.
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      if ((e.target as HTMLElement).closest?.('input, textarea, [contenteditable="true"]')) return
+      const files = [...(e.clipboardData?.files ?? [])].filter((f) => f.type.startsWith('image/'))
+      if (!files.length) return
+      e.preventDefault()
+      void importImages(files)
+    }
+    window.addEventListener('paste', onPaste)
+    return () => window.removeEventListener('paste', onPaste)
+  }, [importImages])
 
   const addFill = useCallback(() => {
     documentStore.getState().addLayer('fill', {}, 0)
@@ -186,7 +228,8 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
       else if (e.key === 'Escape') {
         s.select(null)
         setTool('select')
-      } else if (!e.ctrlKey && !e.altKey && TOOL_KEYS[key]) setTool(TOOL_KEYS[key])
+      } else if (!e.ctrlKey && !e.altKey && key === 'i') fileInput.current?.click()
+      else if (!e.ctrlKey && !e.altKey && TOOL_KEYS[key]) setTool(TOOL_KEYS[key])
       else return
       e.preventDefault()
     }
@@ -217,15 +260,29 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
       <section className={styles.canvas} aria-label={t('editor.canvas')}>
         <EditorCanvas
           template={template}
-          document={{ ...d, layers: d.doc.layers }}
+          document={{ ...d, layers: d.doc.layers, assets: d.doc.assets }}
           tool={tool}
           onToolDone={() => setTool('select')}
           view={view}
           guides={guides}
           fitSignal={fitSignal}
           onZoomChange={setZoom}
+          onDropFiles={(files, at) => void importImages(files, at)}
+          viewCenterRef={viewCenter}
         />
-        {template.status === 'ready' && <Toolbar tool={tool} onTool={setTool} onAddFill={addFill} />}
+        <input
+          ref={fileInput}
+          type="file"
+          accept={[...ASSET_TYPES, '.svg'].join(',')}
+          multiple
+          hidden
+          onChange={(e) => {
+            const files = [...(e.target.files ?? [])]
+            e.target.value = ''
+            if (files.length) void importImages(files)
+          }}
+        />
+        {template.status === 'ready' && <Toolbar tool={tool} onTool={setTool} onAddFill={addFill} onAddImage={() => fileInput.current?.click()} />}
         {template.status !== 'ready' && (
           <div className={styles.overlay}>
             {template.status === 'error' ? (
@@ -289,12 +346,13 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
           </Tabs.Trigger>
         </Tabs.List>
         <Tabs.Content className={styles.tabContent} value="layers">
-          <LayersPanel layers={d.doc.layers} {...d} />
+          <LayersPanel layers={d.doc.layers} assets={d.doc.assets} {...d} />
           {selected && (
             <PropertiesPanel
               key={selected.id}
               layer={selected}
               table={template.segments?.table ?? null}
+              asset={selected.kind === 'image' ? d.doc.assets[selected.assetId] : undefined}
               updateLayer={d.updateLayer}
               beginGesture={d.beginGesture}
               endGesture={d.endGesture}
