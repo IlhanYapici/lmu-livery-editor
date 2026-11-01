@@ -61,6 +61,7 @@ What goes into the files that the game reads.
 - [0026](0026-oxlint-and-oxfmt.md) Lint and format with oxlint and oxfmt
 - [0027](0027-test-strategy.md) Test strategy: synthetic templates, integration tests, end-to-end tests
 - [0028](0028-ci.md) Continuous integration on GitHub Actions, Windows only
+- [0029](0029-branch-workflow.md) Branch workflow: GitHub Flow with a protected master
 
 ### User interface
 
