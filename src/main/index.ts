@@ -1,4 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, net, protocol } from 'electron'
+// A static import: electron-vite makes it a require(). With import(), `autoUpdater` (a getter) is undefined.
+// The updater object is made only when the code reads `autoUpdater`, so development builds load no updater.
+import { autoUpdater } from 'electron-updater'
 import { stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -236,9 +239,8 @@ function confirmClose(window: BrowserWindow, event: Electron.Event): void {
 }
 
 /** Only the installed app updates itself: not in development and not in the end-to-end tests. */
-async function setUpUpdates(window: BrowserWindow): Promise<void> {
+function setUpUpdates(window: BrowserWindow): void {
   if (!app.isPackaged) return
-  const { autoUpdater } = await import('electron-updater')
   startUpdates(autoUpdater, { onReady: (version) => window.webContents.send(IPC.updateReady, version) })
   installUpdate = () => autoUpdater.quitAndInstall(true, true)
 }
@@ -300,6 +302,11 @@ ipcMain.on(IPC.installUpdate, (event) => {
 app.whenReady().then(async () => {
   await i18n.changeLanguage(await getLanguage())
   protocol.handle(TEMPLATE_PROTOCOL, serveTemplate)
-  void setUpUpdates(createWindow())
+  const window = createWindow()
+  try {
+    setUpUpdates(window)
+  } catch (error) {
+    console.error('Cannot start the updates:', error)
+  }
 })
 app.on('window-all-closed', () => (installRequest.install && installUpdate ? installUpdate() : app.quit()))
