@@ -10,6 +10,11 @@ directories:
 files:
   - out/**
   - package.json
+# electron-updater reads the releases of this repository (app-update.yml in the app).
+publish:
+  provider: github
+  owner: IlhanYapici
+  repo: lmu-livery-editor
 win:
   icon: build/icon.ico
   target:

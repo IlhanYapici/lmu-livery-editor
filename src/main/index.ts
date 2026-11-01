@@ -19,9 +19,15 @@ import { loadSettings, saveSettings } from './settings'
 import { findLiveryTemplatesDir, locateGameDir, nodeHost } from './steam'
 import { resolveTemplateUrl } from './templateProtocol'
 import { scanTemplates } from './templates'
+import { startUpdates } from './updater'
 
 // End-to-end tests give the app its own user-data folder, so they never touch the real settings (ADR-0027).
 if (process.env.LMU_USER_DATA_DIR) app.setPath('userData', process.env.LMU_USER_DATA_DIR)
+
+/** True after "Restart now" on the update banner: the app installs the update when the window closes. */
+let installOnClose = false
+/** Installs the downloaded update and starts the app again. Only the installed app has it. */
+let installUpdate: (() => void) | null = null
 
 const settingsFile = () => join(app.getPath('userData'), 'settings.json')
 
@@ -225,9 +231,18 @@ function confirmClose(window: BrowserWindow, event: Electron.Event): void {
   })
   if (choice === 1) event.preventDefault() // Ignore the renderer block: close without saving.
   else if (choice === 0) window.webContents.send(IPC.saveBeforeClose)
+  else installOnClose = false
 }
 
-function createWindow(): void {
+/** Only the installed app updates itself: not in development and not in the end-to-end tests. */
+async function setUpUpdates(window: BrowserWindow): Promise<void> {
+  if (!app.isPackaged) return
+  const { autoUpdater } = await import('electron-updater')
+  startUpdates(autoUpdater, { onReady: (version) => window.webContents.send(IPC.updateReady, version) })
+  installUpdate = () => autoUpdater.quitAndInstall(true, true)
+}
+
+function createWindow(): BrowserWindow {
   const window = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -250,6 +265,7 @@ function createWindow(): void {
 
   if (process.env.ELECTRON_RENDERER_URL) window.loadURL(process.env.ELECTRON_RENDERER_URL)
   else window.loadFile(join(__dirname, '../renderer/index.html'))
+  return window
 }
 
 protocol.registerSchemesAsPrivileged([
@@ -272,10 +288,14 @@ ipcMain.handle(IPC.exportToFolder, (event, skin: unknown, region: unknown) =>
   exportToFolder(BrowserWindow.fromWebContents(event.sender), skin, region)
 )
 ipcMain.on(IPC.closeWindow, (event) => BrowserWindow.fromWebContents(event.sender)?.close())
+ipcMain.on(IPC.installUpdate, (event) => {
+  installOnClose = true
+  BrowserWindow.fromWebContents(event.sender)?.close()
+})
 
 app.whenReady().then(async () => {
   await i18n.changeLanguage(await getLanguage())
   protocol.handle(TEMPLATE_PROTOCOL, serveTemplate)
-  createWindow()
+  void setUpUpdates(createWindow())
 })
-app.on('window-all-closed', () => app.quit())
+app.on('window-all-closed', () => (installOnClose && installUpdate ? installUpdate() : app.quit()))

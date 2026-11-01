@@ -37,6 +37,11 @@
     "licence": "Free software under the MIT licence.",
     "disclaimer": "This app is not made or approved by Motorsport Games, Studio 397 or the ACO. Le Mans Ultimate is a trademark of its owners."
   },
+  "update": {
+    "ready": "Version {{version}} is ready to install.",
+    "restart": "Restart now",
+    "later": "Later"
+  },
   "select": {
     "title": "Select a template",
     "readingTemplates": "Reading templates…",
