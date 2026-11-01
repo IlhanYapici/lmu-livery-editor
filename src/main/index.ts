@@ -22,6 +22,7 @@ import { loadSettings, saveSettings } from './settings'
 import { findLiveryTemplatesDir, locateGameDir, nodeHost } from './steam'
 import { resolveTemplateUrl } from './templateProtocol'
 import { scanTemplates } from './templates'
+import { createFileLog } from './fileLog'
 import { InstallRequest } from './installRequest'
 import { startUpdates } from './updater'
 
@@ -241,10 +242,13 @@ function confirmClose(window: BrowserWindow, event: Electron.Event): void {
 }
 
 /** Only the installed app updates itself: not in development and not in the end-to-end tests. */
-function setUpUpdates(window: BrowserWindow): void {
+function setUpUpdates(window: BrowserWindow, log: ReturnType<typeof createFileLog>): void {
   if (!app.isPackaged) return
+  autoUpdater.logger = log
   startUpdates(autoUpdater, {
+    log: (message) => log.warn(message),
     onReady: (version) => {
+      log.info(`Update ${version} is ready: banner shown`)
       readyUpdate = version
       window.webContents.send(IPC.updateReady, version)
     }
@@ -311,10 +315,12 @@ app.whenReady().then(async () => {
   await i18n.changeLanguage(await getLanguage())
   protocol.handle(TEMPLATE_PROTOCOL, serveTemplate)
   const window = createWindow()
+  // %APPDATA%\lmu-livery-editor\logs\updater.log: the installed app has no visible console.
+  const log = createFileLog(join(app.getPath('logs'), 'updater.log'))
   try {
-    setUpUpdates(window)
+    setUpUpdates(window, log)
   } catch (error) {
-    console.error('Cannot start the updates:', error)
+    log.error(error)
   }
 })
 app.on('window-all-closed', () => (installRequest.install && installUpdate ? installUpdate() : app.quit()))
