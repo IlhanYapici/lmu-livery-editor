@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/IlhanYapici/lmu-livery-editor/compare/v0.1.0...v0.1.1) (2026-11-01)
+
+
+### Bug Fixes
+
+* **main:** forget "Restart now" when the save before close does not complete ([75d9d5d](https://github.com/IlhanYapici/lmu-livery-editor/commit/75d9d5d643b2deb9393d3038cbe05f0e0bc185bf))
+
 ## 0.1.0 (2026-11-01)
 
 
