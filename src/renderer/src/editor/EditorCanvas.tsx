@@ -197,7 +197,7 @@ export function EditorCanvas({ template, document: doc, tool, onToolDone, view, 
         layer={layer}
         width={width}
         height={height}
-        color={regionColors ? REGION_RGB[layer.region] : layer.color}
+        color={regionColors ? REGION_RGB[layer.region] : 'color' in layer ? layer.color : ''}
         interactive={!regionColors && tool === 'select'}
         document={doc}
       />
@@ -304,6 +304,8 @@ function UserLayerNode({ layer, width, height, color, interactive, document: doc
       return <Rect {...common} width={layer.width} height={layer.height} cornerRadius={layer.cornerRadius} fill={color} />
     case 'polygon':
       return <Line {...common} points={layer.points} closed fill={color} />
+    case 'image':
+      return null // Drawn in the next step (image layers).
     case 'text':
       return (
         <Text

@@ -39,6 +39,7 @@ What goes into the files that the game reads.
 - [0013](0013-region-map.md) Region map: game names, colour from pixels
 - [0014](0014-levels-per-template.md) Keep the Levels adjustment of each template
 - [0021](0021-project-files.md) Project files: format, validation and unsaved changes
+- [0025](0025-image-assets.md) Image layers and embedded image assets (project format version 2)
 - [0022](0022-tga-export.md) TGA export: format, folder and backups
 - [0023](0023-region-map-user-layers.md) Region map: how user layers change the template regions
 

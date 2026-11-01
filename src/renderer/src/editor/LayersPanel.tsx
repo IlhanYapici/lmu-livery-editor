@@ -48,7 +48,7 @@ export function LayersPanel({ layers, selectedId, select, updateLayer, removeLay
                 <path d={layer.locked ? 'M8 11V8a4 4 0 0 1 8 0v3' : 'M8 11V8a4 4 0 0 1 7.5-2'} fill="none" stroke="currentColor" strokeWidth="1.6" />
               </svg>
             </Toggle.Root>
-            <span className={styles.color} style={{ background: layer.color }} />
+            <span className={styles.color} style={{ background: 'color' in layer ? layer.color : 'transparent' }} />
             {renaming === layer.id ? (
               <input
                 className={styles.nameInput}

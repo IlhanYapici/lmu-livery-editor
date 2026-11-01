@@ -115,7 +115,9 @@
       "notProject": "The file is not an LMU livery project.",
       "newerVersion": "The file was made with a newer version of the app (format version {{version}}). Update the app.",
       "templateMismatch": "document.templateId: does not match template.id",
-      "field": "{{path}}: {{message}}"
+      "field": "{{path}}: {{message}}",
+      "assetHash": "The image {{id}} is damaged (its data does not match its ID).",
+      "assetTooLarge": "The image {{id}} is larger than the limit."
     }
   },
   "tools": {
@@ -142,7 +144,8 @@
       "fill": "Fill",
       "rect": "Rectangle",
       "polygon": "Polygon",
-      "text": "Text"
+      "text": "Text",
+      "image": "Image"
     },
     "defaultName": "{{kind}} {{count}}",
     "copyName": "{{name}} copy"
@@ -215,6 +218,9 @@
     "minPoints": "needs at least 3 points",
     "evenPoints": "needs an even number of coordinates",
     "uniqueIds": "layer IDs must be unique",
-    "layerPath": "must be a layer index path"
+    "layerPath": "must be a layer index path",
+    "base64": "must be base64 data",
+    "assetId": "must be the SHA-256 of the image (64 hex characters)",
+    "missingAsset": "refers to an image that is not in the file"
   }
 }

@@ -47,9 +47,9 @@ describe('documentStore', () => {
     const a = s.addLayer('rect', { name: 'A' })
     s.updateLayer(a, { color: '#00ff00' })
     s.undo()
-    expect(store.getState().doc.layers[0].color).not.toBe('#00ff00')
+    expect(store.getState().doc.layers[0]).not.toMatchObject({ color: '#00ff00' })
     s.redo()
-    expect(store.getState().doc.layers[0].color).toBe('#00ff00')
+    expect(store.getState().doc.layers[0]).toMatchObject({ color: '#00ff00' })
     s.undo()
     s.undo()
     expect(names(store)).toEqual([])
@@ -107,7 +107,7 @@ describe('documentStore', () => {
   })
 
   it('starts from an opened project without unsaved changes', () => {
-    const doc = { version: 1 as const, templateId: 't', insertion: 3, templateVisibility: {}, layers: [] }
+    const doc = { version: 2 as const, templateId: 't', insertion: 3, templateVisibility: {}, layers: [], assets: {} }
     const store = createDocumentStore('t', { doc, handle: 'h', fileName: 'a.lmulivery' })
     expect(store.getState().doc).toBe(doc)
     expect(hasUnsavedChanges(store.getState())).toBe(false)

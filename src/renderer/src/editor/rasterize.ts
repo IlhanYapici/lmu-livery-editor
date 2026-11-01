@@ -8,7 +8,7 @@ import type { UserLayer } from './document'
 const REGION_RGB = Object.fromEntries(REGIONS.map((r) => [r.id, `rgb(${r.rgb.join(' ')})`]))
 
 /** One Konva node for one user layer. The editor canvas draws the same shapes with react-konva. */
-function layerNode(layer: UserLayer, width: number, height: number, color: string, opacity: number): Konva.Shape {
+function layerNode(layer: UserLayer, width: number, height: number, color: string, opacity: number): Konva.Shape | null {
   const common = { ...layer.transform, opacity, listening: false }
   switch (layer.kind) {
     case 'fill':
@@ -17,6 +17,8 @@ function layerNode(layer: UserLayer, width: number, height: number, color: strin
       return new Konva.Rect({ ...common, width: layer.width, height: layer.height, cornerRadius: layer.cornerRadius, fill: color })
     case 'polygon':
       return new Konva.Line({ ...common, points: layer.points, closed: true, fill: color })
+    case 'image':
+      return null // Drawn in the next step (image layers).
     case 'text':
       return new Konva.Text({
         ...common,
@@ -31,11 +33,11 @@ function layerNode(layer: UserLayer, width: number, height: number, color: strin
   }
 }
 
-async function draw(nodes: Konva.Shape[], width: number, height: number): Promise<ImageBitmap> {
+async function draw(nodes: (Konva.Shape | null)[], width: number, height: number): Promise<ImageBitmap> {
   const stage = new Konva.Stage({ container: document.createElement('div'), width, height })
   const layer = new Konva.Layer({ listening: false })
   stage.add(layer)
-  nodes.forEach((node) => layer.add(node))
+  nodes.forEach((node) => node && layer.add(node))
   try {
     return await createImageBitmap(layer.toCanvas({ pixelRatio: 1 }))
   } finally {
@@ -46,7 +48,7 @@ async function draw(nodes: Konva.Shape[], width: number, height: number): Promis
 /** The visible user layers with their colours and opacity, as they go into the skin. */
 export function rasterizeSkin(layers: UserLayer[], width: number, height: number): Promise<ImageBitmap> {
   return draw(
-    layers.filter((l) => l.visible).map((l) => layerNode(l, width, height, l.color, l.opacity)),
+    layers.filter((l) => l.visible).map((l) => layerNode(l, width, height, 'color' in l ? l.color : '', l.opacity)),
     width,
     height
   )

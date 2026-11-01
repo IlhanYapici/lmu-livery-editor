@@ -1,6 +1,6 @@
 # Project files: format, validation and unsaved changes
 
-**Status:** accepted (2026-10-30)
+**Status:** accepted (2026-10-30). Amended by [ADR-0025](0025-image-assets.md): format version 2 (embedded images) and a 100 MB file limit.
 
 A project is a `.lmulivery` file: UTF-8 JSON with `format: "lmu-livery"`, a format `version` (1), `savedAt`, the template (`id` = file name, `sizeBytes`) and the livery document. `src/shared/project.ts` has the zod schemas. They are the single source of the document types and of the validation, so the two cannot become different.
 

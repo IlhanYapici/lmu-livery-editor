@@ -95,6 +95,13 @@ _Avoid_: project (the project is the file), scene
 **Fill layer**:
 A user layer of one colour that covers the whole texture.
 
+**Image layer**:
+A user layer that shows an imported image (PNG, JPEG, WebP or SVG), for example a sponsor logo.
+_Avoid_: picture layer, sticker (a sticker is a region and a template group)
+
+**Asset**:
+The bytes of one imported image, kept once in the project file and named by their SHA-256. Image layers refer to assets.
+
 **Fast preview**:
 The canvas image made from the template segments, the live user layers and the template Levels as a GPU filter.
 
@@ -128,6 +135,7 @@ The French UI uses the words of the French game UI (ADR-0024).
 | Mask guide | Masque |
 | Guide layer | Repère |
 | Fill layer | Fond |
+| Image layer | Image |
 | Export / Export to folder | Exporter / Exporter dans un dossier |
 | Project file | Projet (fichier .lmulivery) |
 | Continue | Poursuivre |

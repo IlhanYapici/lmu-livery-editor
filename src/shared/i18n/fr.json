@@ -115,7 +115,9 @@
       "notProject": "Le fichier n'est pas un projet de livrée LMU.",
       "newerVersion": "Le fichier a été créé avec une version plus récente de l'application (format {{version}}). Mettez l'application à jour.",
       "templateMismatch": "document.templateId : ne correspond pas à template.id",
-      "field": "{{path}} : {{message}}"
+      "field": "{{path}} : {{message}}",
+      "assetHash": "L'image {{id}} est endommagée (ses données ne correspondent pas à son identifiant).",
+      "assetTooLarge": "L'image {{id}} dépasse la taille limite."
     }
   },
   "tools": {
@@ -142,7 +144,8 @@
       "fill": "Fond",
       "rect": "Rectangle",
       "polygon": "Polygone",
-      "text": "Texte"
+      "text": "Texte",
+      "image": "Image"
     },
     "defaultName": "{{kind}} {{count}}",
     "copyName": "{{name}} copie"
@@ -215,6 +218,9 @@
     "minPoints": "il faut au moins 3 points",
     "evenPoints": "il faut un nombre pair de coordonnées",
     "uniqueIds": "les identifiants des calques doivent être uniques",
-    "layerPath": "doit être un chemin d'indices de calque"
+    "layerPath": "doit être un chemin d'indices de calque",
+    "base64": "doit être des données base64",
+    "assetId": "doit être le SHA-256 de l'image (64 caractères hexadécimaux)",
+    "missingAsset": "fait référence à une image absente du fichier"
   }
 }

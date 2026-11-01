@@ -28,22 +28,24 @@ export function PropertiesPanel({ layer, table, updateLayer, beginGesture, endGe
     <section className={styles.panel} aria-label={t('properties.label')}>
       <h3 className={styles.heading}>{layer.name}</h3>
 
-      <div className={styles.colorRow}>
-        <div onPointerDown={beginGesture}>
-          <HexColorPicker className={styles.picker} color={layer.color} onChange={(color) => update({ color })} />
-        </div>
-        <div className={styles.colorSide}>
-          <label className={styles.label}>
-            {t('properties.colour')}
-            <HexColorInput className={styles.input} color={layer.color} onChange={(color) => update({ color })} prefixed />
-          </label>
-          <div className={styles.swatches}>
-            <span className={styles.swatch} style={{ background: layer.color }} title={t('properties.yourColour')} />
-            <span className={styles.swatch} style={{ background: table ? gameColor(layer.color, table) : layer.color }} title={t('properties.gameColour')} />
+      {'color' in layer && (
+        <div className={styles.colorRow}>
+          <div onPointerDown={beginGesture}>
+            <HexColorPicker className={styles.picker} color={layer.color} onChange={(color) => update({ color })} />
           </div>
-          <span className={styles.note}>{t('properties.colourNote')}</span>
+          <div className={styles.colorSide}>
+            <label className={styles.label}>
+              {t('properties.colour')}
+              <HexColorInput className={styles.input} color={layer.color} onChange={(color) => update({ color })} prefixed />
+            </label>
+            <div className={styles.swatches}>
+              <span className={styles.swatch} style={{ background: layer.color }} title={t('properties.yourColour')} />
+              <span className={styles.swatch} style={{ background: table ? gameColor(layer.color, table) : layer.color }} title={t('properties.gameColour')} />
+            </div>
+            <span className={styles.note}>{t('properties.colourNote')}</span>
+          </div>
         </div>
-      </div>
+      )}
 
       <label className={styles.label}>
         {t('properties.opacity', { value: Math.round(layer.opacity * 100) })}
