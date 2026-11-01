@@ -1,0 +1,7 @@
+# LF everywhere, also on Windows checkouts: oxfmt checks for LF line ends (ADR-0028).
+* text=auto eol=lf
+*.png binary
+*.psd binary
+*.tga binary
+# README.md keeps its original line ends (the user's notes; oxfmt ignores it).
+README.md -text

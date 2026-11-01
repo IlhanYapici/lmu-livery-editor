@@ -1,0 +1,71 @@
+# CI on Windows only: the game and the app target Windows (ADR-0003, ADR-0028).
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+# A new push cancels the run of an older push on the same branch (private repository: minutes count).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Unit and integration tests (with coverage)
+        run: npm run test:coverage
+
+      - name: End-to-end tests
+        run: npm run e2e
+
+      - name: Windows build
+        run: npm run dist:win
+
+      - name: Dependency audit (report only)
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Upload the Windows build
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v6
+        with:
+          name: lmu-livery-editor-win
+          path: dist/win-unpacked
+          retention-days: 7
+
+      - name: Upload the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7

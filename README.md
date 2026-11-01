@@ -1,3 +1,5 @@
+[![CI](https://github.com/IlhanYapici/lmu-livery-editor/actions/workflows/ci.yml/badge.svg)](https://github.com/IlhanYapici/lmu-livery-editor/actions/workflows/ci.yml)
+
 
 1. Trouver les fichiers modèles (Templates)
 
