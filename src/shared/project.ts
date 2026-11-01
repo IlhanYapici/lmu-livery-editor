@@ -16,7 +16,18 @@ export const MAX_LAYERS = 2000
 
 export const FONTS = ['Bebas Neue', 'Oswald', 'Roboto'] as const
 
-const color = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'must be a #rrggbb colour')
+// Custom messages are translation keys; the UI translates them. zod translates its own messages.
+const VALIDATION = {
+  colour: 'validation.colour',
+  minPoints: 'validation.minPoints',
+  evenPoints: 'validation.evenPoints',
+  uniqueIds: 'validation.uniqueIds',
+  layerPath: 'validation.layerPath'
+} as const
+export type ValidationKey = (typeof VALIDATION)[keyof typeof VALIDATION]
+export const isValidationKey = (message: string): message is ValidationKey => (Object.values(VALIDATION) as string[]).includes(message)
+
+const color = z.string().regex(/^#[0-9a-fA-F]{6}$/, VALIDATION.colour)
 const coordinate = z.number().min(-100_000).max(100_000)
 
 const transformSchema = z.object({
@@ -51,9 +62,9 @@ const polygonSchema = z.object({
   kind: z.literal('polygon'),
   points: z
     .array(coordinate)
-    .min(6, 'needs at least 3 points')
+    .min(6, VALIDATION.minPoints)
     .max(20_000)
-    .refine((p) => p.length % 2 === 0, 'needs an even number of coordinates')
+    .refine((p) => p.length % 2 === 0, VALIDATION.evenPoints)
 })
 const textSchema = z.object({
   ...layerBase,
@@ -70,11 +81,11 @@ export const documentSchema = z.object({
   version: z.literal(1),
   templateId: z.string().min(1).max(500),
   insertion: z.number().int().min(0).max(10_000).nullable(),
-  templateVisibility: z.record(z.string().regex(/^\d+(\/\d+)*$/, 'must be a layer index path'), z.boolean()),
+  templateVisibility: z.record(z.string().regex(/^\d+(\/\d+)*$/, VALIDATION.layerPath), z.boolean()),
   layers: z
     .array(userLayerSchema)
     .max(MAX_LAYERS)
-    .refine((layers) => new Set(layers.map((l) => l.id)).size === layers.length, 'layer IDs must be unique')
+    .refine((layers) => new Set(layers.map((l) => l.id)).size === layers.length, VALIDATION.uniqueIds)
 })
 
 export const projectSchema = z.object({
@@ -95,7 +106,15 @@ export type LayerKind = UserLayer['kind']
 export type LiveryDocument = z.infer<typeof documentSchema>
 export type ProjectFile = z.infer<typeof projectSchema>
 
-export type ParseResult = { ok: true; project: ProjectFile } | { ok: false; errors: string[] }
+/** Language-neutral errors: the UI translates them (`project.error.<code>`). Field messages come from zod. */
+export type ProjectError =
+  | { code: 'notJson' }
+  | { code: 'notProject' }
+  | { code: 'newerVersion'; version: number }
+  | { code: 'templateMismatch' }
+  | { code: 'field'; path: string; message: string }
+
+export type ParseResult = { ok: true; project: ProjectFile } | { ok: false; errors: ProjectError[] }
 
 /** "layers.3.region" → "layers[3].region" */
 const pathText = (path: PropertyKey[]) =>
@@ -107,21 +126,21 @@ export function parseProject(text: string): ParseResult {
   try {
     json = JSON.parse(text)
   } catch {
-    return { ok: false, errors: ['The file is not valid JSON.'] }
+    return { ok: false, errors: [{ code: 'notJson' }] }
   }
   const head = json as { format?: unknown; version?: unknown }
   if (typeof json !== 'object' || json === null || head.format !== PROJECT_FORMAT) {
-    return { ok: false, errors: ['The file is not an LMU livery project.'] }
+    return { ok: false, errors: [{ code: 'notProject' }] }
   }
   if (typeof head.version === 'number' && head.version > PROJECT_VERSION) {
-    return { ok: false, errors: [`The file was made with a newer version of the app (format version ${head.version}). Update the app.`] }
+    return { ok: false, errors: [{ code: 'newerVersion', version: head.version }] }
   }
   const result = projectSchema.safeParse(json)
   if (!result.success) {
-    return { ok: false, errors: result.error.issues.map((issue) => `${pathText(issue.path) || 'file'}: ${issue.message}`) }
+    return { ok: false, errors: result.error.issues.map((issue) => ({ code: 'field', path: pathText(issue.path) || 'file', message: issue.message })) }
   }
   if (result.data.document.templateId !== result.data.template.id) {
-    return { ok: false, errors: ['document.templateId: does not match template.id'] }
+    return { ok: false, errors: [{ code: 'templateMismatch' }] }
   }
   return { ok: true, project: result.data }
 }

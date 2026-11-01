@@ -111,3 +111,23 @@ _Avoid_: save (saving writes the project file)
 
 **Livery slot**:
 The one place where the game reads a custom livery: `UserData\Liveries`. It is the same for all cars.
+
+## French terms
+
+The French UI uses the words of the French game UI (ADR-0024).
+
+| English | French |
+|---|---|
+| Livery | Livrée |
+| Region map | Carte de la région |
+| Region: Base, Carbon, Option 1, Option 2, Stickers | Base, Carbone, Option 1, Option 2, Autocollants |
+| Template | Modèle |
+| Variant | Variante |
+| User layer / Your layers | Calque / Vos calques |
+| Wireframe | Maillage |
+| Mask guide | Masque |
+| Guide layer | Repère |
+| Fill layer | Fond |
+| Export / Export to folder | Exporter / Exporter dans un dossier |
+| Project file | Projet (fichier .lmulivery) |
+| Continue | Poursuivre |

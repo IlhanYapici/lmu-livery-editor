@@ -50,6 +50,7 @@ What goes into the files that the game reads.
 - [0018](0018-preview-with-template-segments.md) Editor preview: template segments around a movable insertion point
 - [0019](0019-konva-canvas.md) Konva for the editor canvas
 - [0020](0020-document-model-and-history.md) Livery document model and undo history
+- [0024](0024-i18n.md) Localisation with i18next: English and French
 
 ## Quick start for developers
 

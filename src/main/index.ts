@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { IPC, TEMPLATE_PROTOCOL, type Catalogue, type ExportResult, type GameLocation, type OpenProjectResult, type SaveProjectResult } from '../shared/api'
 import { checkGameTga, liveryFilesExist, writeLiveryFiles } from './liveryExport'
+import { createI18n, isLanguage, languageForLocale, type Language } from '../shared/i18n'
 import { PROJECT_EXTENSION } from '../shared/project'
 import { displayName, ensureFolder, ProjectHandles, readProjectFile, writeAtomic } from './projectFiles'
 import { loadSettings, saveSettings } from './settings'
@@ -12,6 +13,21 @@ import { resolveTemplateUrl } from './templateProtocol'
 import { scanTemplates } from './templates'
 
 const settingsFile = () => join(app.getPath('userData'), 'settings.json')
+
+/** Translations for the dialogs and messages of the main process (ADR-0024). */
+const i18n = createI18n('en')
+const t = i18n.t
+
+async function getLanguage(): Promise<Language> {
+  const { language } = await loadSettings(settingsFile())
+  return isLanguage(language) ? language : languageForLocale(app.getLocale())
+}
+
+async function setLanguage(language: unknown): Promise<void> {
+  if (!isLanguage(language)) return
+  await saveSettings(settingsFile(), { ...(await loadSettings(settingsFile())), language })
+  await i18n.changeLanguage(language)
+}
 
 async function locateGame(): Promise<GameLocation> {
   const settings = await loadSettings(settingsFile())
@@ -31,7 +47,7 @@ async function locateGame(): Promise<GameLocation> {
 
 async function chooseGameDir(window: BrowserWindow | null): Promise<GameLocation> {
   const options: Electron.OpenDialogOptions = {
-    title: 'Select the Le Mans Ultimate install folder',
+    title: t('dialogs.chooseGameFolder'),
     properties: ['openDirectory']
   }
   const result = window ? await dialog.showOpenDialog(window, options) : await dialog.showOpenDialog(options)
@@ -72,20 +88,20 @@ async function serveTemplate(request: Request): Promise<Response> {
 }
 
 const projects = new ProjectHandles()
-const projectFilters = [{ name: 'LMU livery project', extensions: [PROJECT_EXTENSION] }]
+const projectFilters = () => [{ name: t('dialogs.projectFilter'), extensions: [PROJECT_EXTENSION] }]
 const projectFolder = () => ensureFolder(join(app.getPath('documents'), 'LMU Liveries'))
 
 async function openProject(window: BrowserWindow | null): Promise<OpenProjectResult> {
-  const options: Electron.OpenDialogOptions = { title: 'Open a livery project', defaultPath: await projectFolder(), filters: projectFilters, properties: ['openFile'] }
+  const options: Electron.OpenDialogOptions = { title: t('dialogs.openProject'), defaultPath: await projectFolder(), filters: projectFilters(), properties: ['openFile'] }
   const result = window ? await dialog.showOpenDialog(window, options) : await dialog.showOpenDialog(options)
   if (result.canceled || result.filePaths.length === 0) return { status: 'cancelled' }
   const path = result.filePaths[0]
   try {
     const read = await readProjectFile(path)
-    if (!read.ok) return { status: 'error', message: read.error }
+    if (!read.ok) return { status: 'error', message: t('errors.fileTooLarge', { size: read.tooLarge.sizeMB, limit: read.tooLarge.limitMB }) }
     return { status: 'opened', handle: projects.register(path), fileName: displayName(path), text: read.text }
   } catch (error) {
-    return { status: 'error', message: `Cannot read the file: ${(error as Error).message}` }
+    return { status: 'error', message: t('errors.cannotRead', { error: (error as Error).message }) }
   }
 }
 
@@ -94,9 +110,9 @@ async function saveProject(window: BrowserWindow | null, text: string, handle: s
   if (!path) {
     const safeName = suggestedName.replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Livery'
     const options: Electron.SaveDialogOptions = {
-      title: 'Save the livery project',
+      title: t('dialogs.saveProject'),
       defaultPath: join(await projectFolder(), `${safeName}.${PROJECT_EXTENSION}`),
-      filters: projectFilters
+      filters: projectFilters()
     }
     const result = window ? await dialog.showSaveDialog(window, options) : await dialog.showSaveDialog(options)
     if (result.canceled || !result.filePath) return { status: 'cancelled' }
@@ -106,7 +122,7 @@ async function saveProject(window: BrowserWindow | null, text: string, handle: s
     await writeAtomic(path, text)
     return { status: 'saved', handle: projects.register(path), fileName: displayName(path) }
   } catch (error) {
-    return { status: 'error', message: `Cannot write the file: ${(error as Error).message}` }
+    return { status: 'error', message: t('errors.cannotWrite', { error: (error as Error).message }) }
   }
 }
 
@@ -120,22 +136,24 @@ function toBytes(value: unknown): Uint8Array | null {
 function checkFiles(skin: unknown, region: unknown): { skin: Uint8Array; region: Uint8Array } | { error: string } {
   const s = toBytes(skin)
   const r = toBytes(region)
-  if (!s || !r) return { error: 'Bad export request.' }
+  if (!s || !r) return { error: t('errors.badRequest') }
   const problem = checkGameTga(s, 'customskin.tga') ?? checkGameTga(r, 'customskin_region.tga')
-  return problem ? { error: problem } : { skin: s, region: r }
+  if (!problem) return { skin: s, region: r }
+  const [file, ...detail] = problem.split(': ')
+  return { error: t('errors.badTga', { file, error: detail.join(': ') }) }
 }
 
 async function exportToGame(skin: unknown, region: unknown): Promise<ExportResult> {
   const files = checkFiles(skin, region)
   if ('error' in files) return { status: 'error', message: files.error }
   const { gameDir } = await loadSettings(settingsFile())
-  if (!gameDir) return { status: 'error', message: 'The game folder is not known.' }
+  if (!gameDir) return { status: 'error', message: t('errors.gameFolderUnknown') }
   const folder = join(gameDir, 'UserData', 'Liveries')
   try {
     const backup = await writeLiveryFiles(folder, files.skin, files.region, { backup: true })
     return { status: 'exported', folder, backup }
   } catch (error) {
-    return { status: 'error', message: `Cannot write the files: ${(error as Error).message}` }
+    return { status: 'error', message: t('errors.cannotWrite', { error: (error as Error).message }) }
   }
 }
 
@@ -143,7 +161,7 @@ async function exportToFolder(window: BrowserWindow | null, skin: unknown, regio
   const files = checkFiles(skin, region)
   if ('error' in files) return { status: 'error', message: files.error }
   const options: Electron.OpenDialogOptions = {
-    title: 'Select a folder for customskin.tga and customskin_region.tga',
+    title: t('dialogs.exportFolder'),
     defaultPath: await projectFolder(),
     properties: ['openDirectory', 'createDirectory']
   }
@@ -153,9 +171,9 @@ async function exportToFolder(window: BrowserWindow | null, skin: unknown, regio
   if (await liveryFilesExist(folder)) {
     const box: Electron.MessageBoxOptions = {
       type: 'question',
-      message: 'This folder already has livery files.',
-      detail: 'Replace customskin.tga and customskin_region.tga in this folder?',
-      buttons: ['Replace', 'Cancel'],
+      message: t('dialogs.replaceTitle'),
+      detail: t('dialogs.replaceText'),
+      buttons: [t('dialogs.replace'), t('app.cancel')],
       defaultId: 1,
       cancelId: 1,
       noLink: true
@@ -167,7 +185,7 @@ async function exportToFolder(window: BrowserWindow | null, skin: unknown, regio
     await writeLiveryFiles(folder, files.skin, files.region, { backup: false })
     return { status: 'exported', folder, backup: null }
   } catch (error) {
-    return { status: 'error', message: `Cannot write the files: ${(error as Error).message}` }
+    return { status: 'error', message: t('errors.cannotWrite', { error: (error as Error).message }) }
   }
 }
 
@@ -175,10 +193,10 @@ async function exportToFolder(window: BrowserWindow | null, skin: unknown, regio
 function confirmClose(window: BrowserWindow, event: Electron.Event): void {
   const choice = dialog.showMessageBoxSync(window, {
     type: 'warning',
-    title: 'Unsaved changes',
-    message: 'Your livery has unsaved changes.',
-    detail: 'Do you want to save them before you close the app?',
-    buttons: ['Save', "Don't save", 'Cancel'],
+    title: t('dialogs.unsavedCloseTitle'),
+    message: t('dialogs.unsavedCloseMessage'),
+    detail: t('dialogs.unsavedCloseDetail'),
+    buttons: [t('app.save'), t('app.dontSave'), t('app.cancel')],
     defaultId: 0,
     cancelId: 2,
     noLink: true
@@ -210,6 +228,8 @@ protocol.registerSchemesAsPrivileged([
   { scheme: TEMPLATE_PROTOCOL, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }
 ])
 
+ipcMain.handle(IPC.getLanguage, () => getLanguage())
+ipcMain.handle(IPC.setLanguage, (_event, language: unknown) => setLanguage(language))
 ipcMain.handle(IPC.locateGame, () => locateGame())
 ipcMain.handle(IPC.chooseGameDir, (event) => chooseGameDir(BrowserWindow.fromWebContents(event.sender)))
 ipcMain.handle(IPC.listTemplates, () => listTemplates())
@@ -217,13 +237,14 @@ ipcMain.handle(IPC.openProject, (event) => openProject(BrowserWindow.fromWebCont
 ipcMain.handle(IPC.saveProject, (event, text: unknown, handle: unknown, suggestedName: unknown) =>
   typeof text === 'string' && (handle === null || typeof handle === 'string') && typeof suggestedName === 'string'
     ? saveProject(BrowserWindow.fromWebContents(event.sender), text, handle, suggestedName)
-    : { status: 'error', message: 'Bad save request.' }
+    : { status: 'error', message: t('errors.badRequest') }
 )
 ipcMain.handle(IPC.exportToGame, (_event, skin: unknown, region: unknown) => exportToGame(skin, region))
 ipcMain.handle(IPC.exportToFolder, (event, skin: unknown, region: unknown) => exportToFolder(BrowserWindow.fromWebContents(event.sender), skin, region))
 ipcMain.on(IPC.closeWindow, (event) => BrowserWindow.fromWebContents(event.sender)?.close())
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  await i18n.changeLanguage(await getLanguage())
   protocol.handle(TEMPLATE_PROTOCOL, serveTemplate)
   createWindow()
 })

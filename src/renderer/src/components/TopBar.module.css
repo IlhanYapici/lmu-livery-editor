@@ -52,6 +52,14 @@
   white-space: nowrap;
 }
 
+.subtitle {
+  overflow: hidden;
+  font-size: 16px;
+  color: var(--color-text-soft);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .center {
   display: flex;
   justify-content: center;

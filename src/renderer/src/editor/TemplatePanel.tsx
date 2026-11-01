@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Toggle } from 'radix-ui'
+import { useTranslation } from 'react-i18next'
 import type { TemplateNode, Visibility } from '../../../shared/psd/templateRender'
 import styles from './TemplatePanel.module.css'
 
@@ -14,16 +15,17 @@ type Props = {
 
 /** Template content layers, top to bottom like Photoshop, with the "Your layers" row at the insertion point. */
 export function TemplatePanel({ content, visibility, insertion, maxInsertion, onVisible, onInsertion }: Props) {
+  const { t } = useTranslation()
   const isVisible = (n: TemplateNode) => visibility[n.path] ?? !n.hidden
   const rows: ReactNode[] = []
 
   const userRow = (
     <div key="user" className={styles.userRow}>
-      <span className={styles.userName}>Your layers</span>
-      <button className={styles.move} onClick={() => onInsertion(insertion + 1)} disabled={insertion >= maxInsertion} aria-label="Move your layers up">
+      <span className={styles.userName}>{t('template.yourLayers')}</span>
+      <button className={styles.move} onClick={() => onInsertion(insertion + 1)} disabled={insertion >= maxInsertion} aria-label={t('template.moveUp')}>
         ▲
       </button>
-      <button className={styles.move} onClick={() => onInsertion(insertion - 1)} disabled={insertion <= 1} aria-label="Move your layers down">
+      <button className={styles.move} onClick={() => onInsertion(insertion - 1)} disabled={insertion <= 1} aria-label={t('template.moveDown')}>
         ▼
       </button>
     </div>
@@ -38,23 +40,24 @@ export function TemplatePanel({ content, visibility, insertion, maxInsertion, on
 
   return (
     <div className={styles.list}>
-      <p className={styles.hint}>Your layers stay below the Levels of the template, so the game colour range applies to them.</p>
+      <p className={styles.hint}>{t('template.hint')}</p>
       {rows}
     </div>
   )
 }
 
 function NodeRow({ node, depth, isVisible, onVisible }: { node: TemplateNode; depth: number; isVisible: (n: TemplateNode) => boolean; onVisible: (path: string, visible: boolean) => void }) {
+  const { t } = useTranslation()
   const visible = isVisible(node)
   return (
     <>
       <div className={styles.row} style={{ paddingLeft: 8 + depth * 20 }}>
-        <Toggle.Root className={styles.eye} pressed={visible} onPressedChange={(on) => onVisible(node.path, on)} aria-label={`Show ${node.name}`}>
+        <Toggle.Root className={styles.eye} pressed={visible} onPressedChange={(on) => onVisible(node.path, on)} aria-label={t('template.show', { name: node.name })}>
           <EyeIcon open={visible} />
         </Toggle.Root>
         <span className={visible ? styles.name : `${styles.name} ${styles.hidden}`}>{node.name}</span>
-        {node.kind === 'adjustment' && <span className={styles.tag}>adjustment</span>}
-        {node.kind === 'group' && <span className={styles.tag}>group</span>}
+        {node.kind === 'adjustment' && <span className={styles.tag}>{t('template.adjustment')}</span>}
+        {node.kind === 'group' && <span className={styles.tag}>{t('template.group')}</span>}
       </div>
       {[...node.children].reverse().map((child) => (
         <NodeRow key={child.path} node={child} depth={depth + 1} isVisible={isVisible} onVisible={onVisible} />

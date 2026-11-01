@@ -1,5 +1,7 @@
 // Contract between the preload script and the renderer.
 
+import type { Language } from './i18n'
+
 export type GameLocation =
   | { status: 'found'; gameDir: string; templatesDir: string; source: 'settings' | 'auto' | 'manual' }
   | { status: 'not-found' }
@@ -44,6 +46,10 @@ export type ExportResult =
   | { status: 'error'; message: string }
 
 export interface LmuApi {
+  /** The saved UI language, else the language of the system locale. */
+  getLanguage(): Promise<Language>
+  /** Saves the UI language; the main process uses it for its dialogs. */
+  setLanguage(language: Language): Promise<void>
   locateGame(): Promise<GameLocation>
   chooseGameDir(): Promise<GameLocation>
   /** Templates of the saved game folder. Empty if no game folder is known. */
@@ -63,6 +69,8 @@ export interface LmuApi {
 }
 
 export const IPC = {
+  getLanguage: 'i18n:get',
+  setLanguage: 'i18n:set',
   locateGame: 'game:locate',
   chooseGameDir: 'game:choose',
   listTemplates: 'templates:list',

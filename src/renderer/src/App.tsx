@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Catalogue, GameLocation } from '../../shared/api'
-import { parseProject } from '../../shared/project'
+import { isValidationKey, parseProject, type ProjectError } from '../../shared/project'
 import { Button } from './components/Button'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { GameFolderDialog } from './components/GameFolderDialog'
@@ -9,7 +10,21 @@ import type { InitialProject } from './editor/documentStore'
 import { EditorScreen, type EditorGuard } from './screens/EditorScreen'
 import { LocateScreen } from './screens/LocateScreen'
 import { SelectScreen, type Selection } from './screens/SelectScreen'
+import { i18n } from './i18n'
 import styles from './App.module.css'
+
+/** A project error in the UI language. Custom schema messages are translation keys. */
+function projectErrorText(error: ProjectError): string {
+  const t = i18n.t
+  switch (error.code) {
+    case 'newerVersion':
+      return t('project.error.newerVersion', { version: error.version })
+    case 'field':
+      return t('project.error.field', { path: error.path, message: isValidationKey(error.message) ? t(error.message) : error.message })
+    default:
+      return t(`project.error.${error.code}`)
+  }
+}
 
 /** The editor session. `key` changes for each opened project, so that the editor starts again. */
 type Editing = { key: number; project: InitialProject | null; templateChanged: boolean }
@@ -17,16 +32,17 @@ type Editing = { key: number; project: InitialProject | null; templateChanged: b
 type Message = { title: string; lines: string[] }
 
 export function App() {
+  const { t } = useTranslation()
   const [location, setLocation] = useState<GameLocation | null>(null)
   const [catalogue, setCatalogue] = useState<Catalogue | null>(null)
   const [selection, setSelection] = useState<Selection | null>(null)
   const [editing, setEditing] = useState<Editing | null>(null)
-  const [title, setTitle] = useState('Edit livery')
+  const [title, setTitle] = useState('')
   const [message, setMessage] = useState<Message | null>(null)
   /** The action that waits for the answer to "Save changes?". */
   const [pendingLeave, setPendingLeave] = useState<(() => void) | null>(null)
   const guard = useRef<EditorGuard | null>(null)
-  const showSaveError = useCallback((lines: string[]) => setMessage({ title: 'Cannot save the project', lines }), [])
+  const showSaveError = useCallback((lines: string[]) => setMessage({ title: i18n.t('project.cannotSave'), lines }), [])
 
   useEffect(() => {
     window.lmu.locateGame().then(setLocation)
@@ -53,9 +69,10 @@ export function App() {
     if (!catalogue) return
     const result = await window.lmu.openProject()
     if (result.status === 'cancelled') return
-    if (result.status === 'error') return setMessage({ title: 'Cannot open the project', lines: [result.message] })
+    if (result.status === 'error') return setMessage({ title: t('project.cannotOpen'), lines: [result.message] })
     const parsed = parseProject(result.text)
-    if (!parsed.ok) return setMessage({ title: 'Cannot open the project', lines: [`${result.fileName} is not a valid project:`, ...parsed.errors.slice(0, 8)] })
+    if (!parsed.ok)
+      return setMessage({ title: t('project.cannotOpen'), lines: [t('project.invalid', { file: result.fileName }), ...parsed.errors.slice(0, 8).map(projectErrorText)] })
 
     const { template, document } = parsed.project
     for (const category of catalogue)
@@ -71,10 +88,10 @@ export function App() {
             return
           }
     setMessage({
-      title: 'Template not installed',
-      lines: [`${result.fileName} uses the template ${template.id}, which is not in your game folder.`, 'Install or update the car in the game, then open the project again.']
+      title: t('project.templateMissingTitle'),
+      lines: [t('project.templateMissing', { file: result.fileName, template: template.id }), t('project.templateMissingHelp')]
     })
-  }, [catalogue])
+  }, [catalogue, t])
 
   const openWithGuard = useCallback(() => leaveEditor(() => void openProject()), [leaveEditor, openProject])
 
@@ -100,8 +117,8 @@ export function App() {
 
   const right = (
     <>
-      <Button onClick={openWithGuard} disabled={!catalogue} title="Open a project (Ctrl+O)">
-        Open project
+      <Button onClick={openWithGuard} disabled={!catalogue} title={t('app.openProjectHint')}>
+        {t('app.openProject')}
       </Button>
       <GameFolderDialog location={location} onChoose={choose} />
     </>
@@ -114,10 +131,10 @@ export function App() {
     <>
       <ConfirmDialog
         open={pendingLeave !== null}
-        title="Unsaved changes"
+        title={t('project.unsavedTitle')}
         actions={[
           {
-            label: 'Save',
+            label: t('app.save'),
             primary: true,
             onSelect: async () => {
               const action = pendingLeave
@@ -126,19 +143,19 @@ export function App() {
             }
           },
           {
-            label: "Don't save",
+            label: t('app.dontSave'),
             onSelect: () => {
               const action = pendingLeave
               setPendingLeave(null)
               action?.()
             }
           },
-          { label: 'Cancel', onSelect: () => setPendingLeave(null) }
+          { label: t('app.cancel'), onSelect: () => setPendingLeave(null) }
         ]}
       >
-        <p>Your livery has unsaved changes. Do you want to save them first?</p>
+        <p>{t('project.unsavedText')}</p>
       </ConfirmDialog>
-      <ConfirmDialog open={message !== null} title={message?.title ?? ''} actions={[{ label: 'OK', primary: true, onSelect: () => setMessage(null) }]}>
+      <ConfirmDialog open={message !== null} title={message?.title ?? ''} actions={[{ label: t('app.ok'), primary: true, onSelect: () => setMessage(null) }]}>
         {message && message.lines.length > 1 ? (
           <>
             <p>{message.lines[0]}</p>
@@ -160,7 +177,7 @@ export function App() {
   if (editing && category && car && variant) {
     return (
       <div className={styles.app}>
-        <TopBar title={title} onBack={() => leaveEditor(() => setEditing(null))} right={right} />
+        <TopBar title={t('editor.title')} subtitle={title} onBack={() => leaveEditor(() => setEditing(null))} right={right} />
         <EditorScreen
           key={editing.key}
           category={category}
@@ -179,9 +196,9 @@ export function App() {
 
   return (
     <div className={styles.app}>
-      <TopBar title="Select a template" right={right} />
-      {catalogue === null && <p className={styles.message}>Reading templates…</p>}
-      {catalogue?.length === 0 && <p className={styles.message}>No templates in the game folder.</p>}
+      <TopBar title={t('select.title')} right={right} />
+      {catalogue === null && <p className={styles.message}>{t('select.readingTemplates')}</p>}
+      {catalogue?.length === 0 && <p className={styles.message}>{t('select.noTemplates')}</p>}
       {catalogue && catalogue.length > 0 && selection && (
         <SelectScreen catalogue={catalogue} selection={selection} onSelect={setSelection} onContinue={() => setEditing({ key: Date.now(), project: null, templateChanged: false })} />
       )}

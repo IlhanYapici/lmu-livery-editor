@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { GameLocation } from '../../../shared/api'
 import { Button } from '../components/Button'
 import { TopBar } from '../components/TopBar'
@@ -10,25 +11,23 @@ type Props = {
 
 /** Shown while the app looks for the game, and when it cannot find it. */
 export function LocateScreen({ location, onChoose }: Props) {
+  const { t } = useTranslation()
   return (
     <div className={styles.screen}>
-      <TopBar title="Livery editor" />
+      <TopBar title={t('locate.title')} />
       <main className={styles.main}>
         {location === null ? (
-          <p className={styles.text}>Searching for Le Mans Ultimate…</p>
+          <p className={styles.text}>{t('locate.searching')}</p>
         ) : (
           <section className={styles.panel}>
-            <h2 className={styles.heading}>Le Mans Ultimate not found</h2>
+            <h2 className={styles.heading}>{t('locate.notFound')}</h2>
             {location.status === 'invalid' ? (
-              <p className={styles.text}>
-                <code>{location.gameDir}</code> has no <code>support/LiveryTemplates</code> folder. Select the install
-                folder of the game.
-              </p>
+              <p className={styles.text}>{t('locate.invalid', { folder: location.gameDir })}</p>
             ) : (
-              <p className={styles.text}>Select the install folder of the game, for example <code>…\steamapps\common\Le Mans Ultimate</code>.</p>
+              <p className={styles.text}>{t('locate.selectHint')}</p>
             )}
             <Button variant="primary" size="large" onClick={onChoose}>
-              Select folder
+              {t('locate.selectFolder')}
             </Button>
           </section>
         )}

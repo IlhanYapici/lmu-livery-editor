@@ -1,5 +1,6 @@
 import type { RegionId } from '../../../shared/psd/regions'
 import type { FillLayer, LayerKind, LiveryDocument, PolygonLayer, RectLayer, TextLayer, UserLayer } from '../../../shared/project'
+import { i18n } from '../i18n'
 
 // Factories for the livery document. The types and the validation are in src/shared/project.ts.
 // Coordinates are template pixels (0..4096). Shapes keep their scale in `transform` (no baking).
@@ -11,8 +12,6 @@ export function emptyDocument(templateId: string): LiveryDocument {
   return { version: 1, templateId, insertion: null, templateVisibility: {}, layers: [] }
 }
 
-const KIND_NAME: Record<LayerKind, string> = { fill: 'Fill', rect: 'Rectangle', polygon: 'Polygon', text: 'Text' }
-
 let counter = 0
 export const newId = () => `layer-${Date.now().toString(36)}-${(counter++).toString(36)}`
 
@@ -21,7 +20,7 @@ export function createLayer(kind: LayerKind, existing: UserLayer[], props: Parti
   const count = existing.filter((l) => l.kind === kind).length + 1
   const base = {
     id: newId(),
-    name: `${KIND_NAME[kind]} ${count}`,
+    name: i18n.t('layers.defaultName', { kind: i18n.t(`layers.kind.${kind}`), count }),
     visible: true,
     locked: false,
     opacity: 1,

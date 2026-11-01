@@ -1,4 +1,5 @@
 import { createStore } from 'zustand/vanilla'
+import { i18n } from '../i18n'
 import { createLayer, emptyDocument, newId, type LayerKind, type LiveryDocument, type UserLayer } from './document'
 
 // The document with an undo history. Each action is one step. A gesture (drag, transform, colour drag)
@@ -97,7 +98,7 @@ export function createDocumentStore(templateId: string, initial?: InitialProject
         const copy: UserLayer = {
           ...structuredClone(source),
           id: newId(),
-          name: `${source.name} copy`,
+          name: i18n.t('layers.copyName', { name: source.name }),
           transform: { ...source.transform, x: source.transform.x + 40, y: source.transform.y + 40 }
         }
         commit((doc) => mapLayers(doc, (all) => [...all.slice(0, index + 1), copy, ...all.slice(index + 1)]), copy.id)

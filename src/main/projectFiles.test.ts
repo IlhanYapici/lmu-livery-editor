@@ -44,7 +44,7 @@ describe('project file IO', () => {
     const big = join(dir, 'big.lmulivery')
     await writeFile(big, Buffer.alloc(MAX_PROJECT_BYTES + 1))
     const result = await readProjectFile(big)
-    expect(result.ok).toBe(false)
+    expect(result).toEqual({ ok: false, tooLarge: { sizeMB: 20, limitMB: 20 } })
     const small = join(dir, 'small.lmulivery')
     await writeFile(small, '{}')
     expect(await readProjectFile(small)).toEqual({ ok: true, text: '{}' })

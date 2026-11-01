@@ -1,0 +1,220 @@
+{
+  "app": {
+    "mark": "LIVERY",
+    "back": "Back",
+    "language": "Language",
+    "openProject": "Open project",
+    "openProjectHint": "Open a project (Ctrl+O)",
+    "untitled": "Untitled livery",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "save": "Save",
+    "dontSave": "Don't save"
+  },
+  "locate": {
+    "title": "Livery editor",
+    "searching": "Searching for Le Mans Ultimate…",
+    "notFound": "Le Mans Ultimate not found",
+    "invalid": "{{folder}} has no support/LiveryTemplates folder. Select the install folder of the game.",
+    "selectHint": "Select the install folder of the game, for example …\\steamapps\\common\\Le Mans Ultimate.",
+    "selectFolder": "Select folder"
+  },
+  "gameFolder": {
+    "button": "Game folder",
+    "title": "Game folder",
+    "description": "Le Mans Ultimate ({{source}}):",
+    "source": {
+      "settings": "saved setting",
+      "auto": "found automatically",
+      "manual": "selected by you"
+    },
+    "selectAnother": "Select another folder",
+    "close": "Close"
+  },
+  "select": {
+    "title": "Select a template",
+    "readingTemplates": "Reading templates…",
+    "noTemplates": "No templates in the game folder.",
+    "templateFound": "Template found · {{size}}",
+    "continue": "Continue",
+    "category": "Category",
+    "car": "Car",
+    "variant": "Variant",
+    "variantCount_one": "{{count}} variant",
+    "variantCount_other": "{{count}} variants"
+  },
+  "editor": {
+    "title": "Edit livery",
+    "canvas": "Canvas",
+    "stage": {
+      "reading": "Reading the template",
+      "parsing": "Reading the layers",
+      "guides": "Drawing the guides",
+      "segments": "Drawing the template",
+      "export-skin": "Drawing the livery",
+      "export-regions": "Drawing the region map",
+      "writing": "Writing the files",
+      "loading": "Loading"
+    },
+    "cannotOpenTemplate": "Cannot open the template: {{error}}",
+    "updating": "Updating the template…",
+    "templateChanged": "This template changed since the project was saved (probably a game update). Check the positions of your layers.",
+    "undo": "Undo (Ctrl+Z)",
+    "redo": "Redo (Ctrl+Y)",
+    "fit": "Fit",
+    "tabs": {
+      "label": "Editor panels",
+      "layers": "Layers",
+      "template": "Template",
+      "regions": "Regions"
+    },
+    "loading": "Loading…",
+    "regionHead": "Region",
+    "regionColourHead": "Colour in the region map",
+    "view": "View",
+    "viewLivery": "Livery",
+    "viewRegions": "Region map",
+    "guides": "Guides",
+    "wireframe": "Wireframe",
+    "mask": "Mask",
+    "save": "Save",
+    "saveHint": "Save (Ctrl+S)",
+    "saveAs": "Save as",
+    "saveAsHint": "Save as (Ctrl+Shift+S)",
+    "status": "Loaded in {{load}} · template drawn in {{draw}} · {{preview}}",
+    "preview": {
+      "exact": "preview exact",
+      "exactDone": "exact preview ({{time}})",
+      "exactPending": "fast preview · exact preview in progress…",
+      "approximate": "fast preview (approximate)"
+    },
+    "exportToFolder": "Export to folder",
+    "exportToFolderHint": "Write the two TGA files into a folder of your choice",
+    "export": "Export"
+  },
+  "export": {
+    "confirmTitle": "Export to the game",
+    "confirmText": "The game has one custom livery for all cars ({{slot}}). The export replaces the files that are there now. The app keeps the previous files in {{backups}} (the last 5 exports).",
+    "doneTitle": "Livery exported",
+    "doneFiles": "customskin.tga and customskin_region.tga are in {{folder}}.",
+    "doneBackup": "The previous files are in {{folder}}.",
+    "doneReload": "In the game: open the {{car}} in the showroom and press RELOAD.",
+    "failedTitle": "Export failed"
+  },
+  "project": {
+    "unsavedTitle": "Unsaved changes",
+    "unsavedText": "Your livery has unsaved changes. Do you want to save them first?",
+    "cannotOpen": "Cannot open the project",
+    "cannotSave": "Cannot save the project",
+    "invalid": "{{file}} is not a valid project:",
+    "templateMissingTitle": "Template not installed",
+    "templateMissing": "{{file}} uses the template {{template}}, which is not in your game folder.",
+    "templateMissingHelp": "Install or update the car in the game, then open the project again.",
+    "error": {
+      "notJson": "The file is not valid JSON.",
+      "notProject": "The file is not an LMU livery project.",
+      "newerVersion": "The file was made with a newer version of the app (format version {{version}}). Update the app.",
+      "templateMismatch": "document.templateId: does not match template.id",
+      "field": "{{path}}: {{message}}"
+    }
+  },
+  "tools": {
+    "label": "Tools",
+    "select": "Select and move",
+    "rect": "Rectangle (drag)",
+    "polygon": "Polygon (click points, double-click or Enter to close)",
+    "text": "Text (click to place)",
+    "addFill": "Add fill",
+    "addFillHint": "Add a fill layer at the bottom of your layers"
+  },
+  "layers": {
+    "label": "Your layers",
+    "empty": "No layers yet. Use the tools on the left of the canvas.",
+    "visible": "Visible",
+    "locked": "Locked",
+    "renameHint": "Double-click to rename",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "duplicate": "Duplicate",
+    "delete": "Delete",
+    "region": "Region",
+    "kind": {
+      "fill": "Fill",
+      "rect": "Rectangle",
+      "polygon": "Polygon",
+      "text": "Text"
+    },
+    "defaultName": "{{kind}} {{count}}",
+    "copyName": "{{name}} copy"
+  },
+  "properties": {
+    "label": "Layer properties",
+    "colour": "Colour",
+    "yourColour": "Your colour",
+    "gameColour": "In game (after the template Levels)",
+    "colourNote": "Left: your colour. Right: in game, after the template Levels.",
+    "opacity": "Opacity {{value}} %",
+    "rotation": "Rotation °",
+    "scaleX": "Scale X",
+    "scaleY": "Scale Y",
+    "width": "Width",
+    "height": "Height",
+    "cornerRadius": "Corner radius",
+    "text": "Text",
+    "font": "Font",
+    "size": "Size",
+    "outline": "Outline",
+    "outlineColour": "Outline colour",
+    "outlineWidth": "Outline width"
+  },
+  "template": {
+    "hint": "Your layers stay below the Levels of the template, so the game colour range applies to them.",
+    "yourLayers": "Your layers",
+    "moveUp": "Move your layers up",
+    "moveDown": "Move your layers down",
+    "show": "Show {{name}}",
+    "adjustment": "adjustment",
+    "group": "group"
+  },
+  "regions": {
+    "base": "Base",
+    "carbon": "Carbon",
+    "option1": "Option 1",
+    "option2": "Option 2",
+    "stickers": "Stickers"
+  },
+  "dialogs": {
+    "chooseGameFolder": "Select the Le Mans Ultimate install folder",
+    "openProject": "Open a livery project",
+    "saveProject": "Save the livery project",
+    "projectFilter": "LMU livery project",
+    "exportFolder": "Select a folder for customskin.tga and customskin_region.tga",
+    "replaceTitle": "This folder already has livery files.",
+    "replaceText": "Replace customskin.tga and customskin_region.tga in this folder?",
+    "replace": "Replace",
+    "unsavedCloseTitle": "Unsaved changes",
+    "unsavedCloseMessage": "Your livery has unsaved changes.",
+    "unsavedCloseDetail": "Do you want to save them before you close the app?"
+  },
+  "errors": {
+    "fileTooLarge": "The file is too large ({{size}} MB; the limit is {{limit}} MB).",
+    "cannotRead": "Cannot read the file: {{error}}",
+    "cannotWrite": "Cannot write the files: {{error}}",
+    "badRequest": "Bad request.",
+    "gameFolderUnknown": "The game folder is not known.",
+    "badTga": "{{file}} is not a valid game TGA file: {{error}}",
+    "exportRunning": "An export is already running.",
+    "editorClosed": "The editor closed."
+  },
+  "units": {
+    "seconds": "{{value}} s",
+    "megabytes": "{{value}} MB"
+  },
+  "validation": {
+    "colour": "must be a #rrggbb colour",
+    "minPoints": "needs at least 3 points",
+    "evenPoints": "needs an even number of coordinates",
+    "uniqueIds": "layer IDs must be unique",
+    "layerPath": "must be a layer index path"
+  }
+}

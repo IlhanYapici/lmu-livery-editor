@@ -23,9 +23,10 @@ const fileWith = (change: (project: any) => void) => {
   change(project)
   return JSON.stringify(project)
 }
+/** Errors as short texts for the assertions: the code, or "path: message" for field errors. */
 const errorsOf = (text: string) => {
   const result = parseProject(text)
-  return result.ok ? [] : result.errors
+  return result.ok ? [] : result.errors.map((e) => (e.code === 'field' ? `${e.path}: ${e.message}` : e.code === 'newerVersion' ? `newerVersion ${e.version}` : e.code))
 }
 
 describe('project files', () => {
@@ -45,10 +46,10 @@ describe('project files', () => {
   })
 
   it('refuses files that are not projects, or from a newer version', () => {
-    expect(errorsOf('not json')).toEqual(['The file is not valid JSON.'])
-    expect(errorsOf('{"format":"other"}')).toEqual(['The file is not an LMU livery project.'])
-    expect(errorsOf('[]')).toEqual(['The file is not an LMU livery project.'])
-    expect(errorsOf(fileWith((p) => (p.version = 2)))[0]).toMatch(/newer version of the app/)
+    expect(errorsOf('not json')).toEqual(['notJson'])
+    expect(errorsOf('{"format":"other"}')).toEqual(['notProject'])
+    expect(errorsOf('[]')).toEqual(['notProject'])
+    expect(errorsOf(fileWith((p) => (p.version = 2)))).toEqual(['newerVersion 2'])
   })
 
   it('gives the location of each error', () => {
@@ -62,8 +63,8 @@ describe('project files', () => {
       })
     )
     expect(errors.some((e) => e.startsWith('document.layers[1].region:'))).toBe(true)
-    expect(errors.some((e) => e.startsWith('document.layers[1].color:') && e.includes('#rrggbb'))).toBe(true)
-    expect(errors.some((e) => e.startsWith('document.layers[2].points:') && e.includes('3 points'))).toBe(true)
+    expect(errors.some((e) => e.startsWith('document.layers[1].color:') && e.includes('validation.colour'))).toBe(true)
+    expect(errors.some((e) => e.startsWith('document.layers[2].points:') && e.includes('validation.minPoints'))).toBe(true)
     expect(errors.some((e) => e.startsWith('document.layers[3].fontFamily:'))).toBe(true)
     expect(errors.some((e) => e.includes('templateVisibility'))).toBe(true)
   })
@@ -71,9 +72,9 @@ describe('project files', () => {
   it('refuses non-finite numbers, duplicate IDs, too many layers and a template mismatch', () => {
     // JSON has no Infinity; 1e999 parses to Infinity.
     expect(errorsOf(fileWith((p) => (p.document.layers[1].width = 'X')).replace('"X"', '1e999')).length).toBeGreaterThan(0)
-    expect(errorsOf(fileWith((p) => (p.document.layers[1].id = 'a')))).toContain('document.layers: layer IDs must be unique')
+    expect(errorsOf(fileWith((p) => (p.document.layers[1].id = 'a')))).toContain('document.layers: validation.uniqueIds')
     const many: UserLayer[] = Array.from({ length: MAX_LAYERS + 1 }, (_, i) => ({ ...base, id: `l${i}`, name: 'F', kind: 'fill' }))
     expect(errorsOf(fileWith((p) => (p.document.layers = many))).length).toBeGreaterThan(0)
-    expect(errorsOf(fileWith((p) => (p.template.id = 'Template_GT3_Other.psd')))).toEqual(['document.templateId: does not match template.id'])
+    expect(errorsOf(fileWith((p) => (p.template.id = 'Template_GT3_Other.psd')))).toEqual(['templateMismatch'])
   })
 })

@@ -33,13 +33,14 @@ export async function writeAtomic(path: string, data: string | Uint8Array): Prom
   }
 }
 
-export type ReadResult = { ok: true; text: string } | { ok: false; error: string }
+/** `tooLarge` carries sizes in MB; the caller translates it. */
+export type ReadResult = { ok: true; text: string } | { ok: false; tooLarge: { sizeMB: number; limitMB: number } }
 
 /** Reads a project file, after a size check: the file comes from outside the app. */
 export async function readProjectFile(path: string): Promise<ReadResult> {
   const { size } = await stat(path)
   if (size > MAX_PROJECT_BYTES) {
-    return { ok: false, error: `The file is too large (${Math.round(size / 1048576)} MB; the limit is ${MAX_PROJECT_BYTES / 1048576} MB).` }
+    return { ok: false, tooLarge: { sizeMB: Math.round(size / 1048576), limitMB: MAX_PROJECT_BYTES / 1048576 } }
   }
   return { ok: true, text: await readFile(path, 'utf8') }
 }

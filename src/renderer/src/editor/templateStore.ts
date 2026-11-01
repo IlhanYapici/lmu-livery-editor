@@ -1,5 +1,6 @@
 import { createStore } from 'zustand/vanilla'
 import { templateUrl } from '../../../shared/api'
+import { i18n } from '../i18n'
 import type { TemplateOutline, Visibility } from '../../../shared/psd/templateRender'
 import type { LoadStage, WorkerRequest, WorkerResponse } from './templateMessages'
 
@@ -86,14 +87,14 @@ export function createTemplateStore(fileName: string) {
 
     exportFiles: (user, userRegions, insertion, visibility) =>
       new Promise<ExportedFiles>((resolve, reject) => {
-        if (pendingExport) return reject(new Error('An export is already running.'))
+        if (pendingExport) return reject(new Error(i18n.t('errors.exportRunning')))
         pendingExport = { resolve, reject }
         set({ exporting: true })
         send({ type: 'export', insertion, visibility, user, userRegions }, [user, userRegions])
       }),
 
     dispose: () => {
-      pendingExport?.reject(new Error('The editor closed.'))
+      pendingExport?.reject(new Error(i18n.t('errors.editorClosed')))
       clearTimeout(timer)
       worker.terminate()
       const { guides, segments, exact } = get()

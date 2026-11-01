@@ -1,9 +1,11 @@
 import { ToggleGroup } from 'radix-ui'
+import { useTranslation } from 'react-i18next'
 import { useEffect, useRef, type CSSProperties } from 'react'
 import type { Catalogue } from '../../../shared/api'
 import { classColor } from '../classColors'
 import { Button } from '../components/Button'
 import { ClassBadge } from '../components/ClassBadge'
+import { formatMegabytes } from '../i18n'
 import styles from './SelectScreen.module.css'
 
 export type Selection = { categoryId: string; carId: string; variantId: string }
@@ -15,10 +17,10 @@ type Props = {
   onContinue: () => void
 }
 
-const formatSize = (bytes: number) => `${Math.round(bytes / 1024 / 1024)} MB`
 
 /** Category → car → variant, in the style of the car selection screen of the game. */
 export function SelectScreen({ catalogue, selection, onSelect, onContinue }: Props) {
+  const { t } = useTranslation()
   const category = catalogue.find((c) => c.id === selection.categoryId) ?? catalogue[0]
   const car = category.cars.find((c) => c.id === selection.carId) ?? category.cars[0]
   const variant = car.variants.find((v) => v.id === selection.variantId) ?? car.variants[0]
@@ -56,7 +58,7 @@ export function SelectScreen({ catalogue, selection, onSelect, onContinue }: Pro
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
           <path d="m4 12 5 5L20 6" fill="none" stroke="currentColor" strokeWidth="2" />
         </svg>
-        Template found · {formatSize(variant.sizeBytes)}
+        {t('select.templateFound', { size: formatMegabytes(variant.sizeBytes) })}
       </aside>
 
       <section className={styles.picker} ref={pickerRef}>
@@ -66,7 +68,7 @@ export function SelectScreen({ catalogue, selection, onSelect, onContinue }: Pro
             className={styles.classTabs}
             value={category.id}
             onValueChange={(id) => id && selectCategory(id)}
-            aria-label="Category"
+            aria-label={t('select.category')}
           >
             {catalogue.map((c) => (
               <ToggleGroup.Item
@@ -80,7 +82,7 @@ export function SelectScreen({ catalogue, selection, onSelect, onContinue }: Pro
             ))}
           </ToggleGroup.Root>
           <Button variant="primary" size="large" onClick={onContinue}>
-            Continue
+            {t('select.continue')}
           </Button>
         </div>
 
@@ -89,13 +91,13 @@ export function SelectScreen({ catalogue, selection, onSelect, onContinue }: Pro
           className={styles.tiles}
           value={car.id}
           onValueChange={(id) => id && selectCar(id)}
-          aria-label="Car"
+          aria-label={t('select.car')}
         >
           {category.cars.map((c) => (
             <ToggleGroup.Item key={c.id} value={c.id} className={styles.carTile}>
               <span className={styles.tileName}>{c.name}</span>
               <span className={styles.tileCount}>
-                {c.variants.length} {c.variants.length === 1 ? 'variant' : 'variants'}
+                {t('select.variantCount', { count: c.variants.length })}
               </span>
             </ToggleGroup.Item>
           ))}
@@ -106,12 +108,12 @@ export function SelectScreen({ catalogue, selection, onSelect, onContinue }: Pro
           className={styles.tiles}
           value={variant.id}
           onValueChange={selectVariant}
-          aria-label="Variant"
+          aria-label={t('select.variant')}
         >
           {car.variants.map((v) => (
             <ToggleGroup.Item key={v.id} value={v.id} className={styles.variantTile}>
               <span className={styles.variantLabel}>{v.label}</span>
-              <span className={styles.variantSize}>{formatSize(v.sizeBytes)}</span>
+              <span className={styles.variantSize}>{formatMegabytes(v.sizeBytes)}</span>
             </ToggleGroup.Item>
           ))}
         </ToggleGroup.Root>

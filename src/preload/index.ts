@@ -2,6 +2,8 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { IPC, type LmuApi } from '../shared/api'
 
 const api: LmuApi = {
+  getLanguage: () => ipcRenderer.invoke(IPC.getLanguage),
+  setLanguage: (language) => ipcRenderer.invoke(IPC.setLanguage, language),
   locateGame: () => ipcRenderer.invoke(IPC.locateGame),
   chooseGameDir: () => ipcRenderer.invoke(IPC.chooseGameDir),
   listTemplates: () => ipcRenderer.invoke(IPC.listTemplates),

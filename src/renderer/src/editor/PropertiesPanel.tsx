@@ -1,6 +1,7 @@
 import { Select, Slider } from 'radix-ui'
 import { useEffect, useState } from 'react'
 import { HexColorInput, HexColorPicker } from 'react-colorful'
+import { useTranslation } from 'react-i18next'
 import { FONTS, type UserLayer } from './document'
 import type { DocumentState } from './documentStore'
 import styles from './PropertiesPanel.module.css'
@@ -13,6 +14,7 @@ type Props = Pick<DocumentState, 'updateLayer' | 'beginGesture' | 'endGesture'> 
 
 /** Properties of the selected layer. A drag on the colour picker or the slider is one history step. */
 export function PropertiesPanel({ layer, table, updateLayer, beginGesture, endGesture }: Props) {
+  const { t } = useTranslation()
   const update = (patch: Partial<UserLayer>) => updateLayer(layer.id, patch)
   const transform = (patch: Partial<UserLayer['transform']>) => update({ transform: { ...layer.transform, ...patch } })
 
@@ -23,7 +25,7 @@ export function PropertiesPanel({ layer, table, updateLayer, beginGesture, endGe
   }, [endGesture])
 
   return (
-    <section className={styles.panel} aria-label="Layer properties">
+    <section className={styles.panel} aria-label={t('properties.label')}>
       <h3 className={styles.heading}>{layer.name}</h3>
 
       <div className={styles.colorRow}>
@@ -32,19 +34,19 @@ export function PropertiesPanel({ layer, table, updateLayer, beginGesture, endGe
         </div>
         <div className={styles.colorSide}>
           <label className={styles.label}>
-            Colour
+            {t('properties.colour')}
             <HexColorInput className={styles.input} color={layer.color} onChange={(color) => update({ color })} prefixed />
           </label>
           <div className={styles.swatches}>
-            <span className={styles.swatch} style={{ background: layer.color }} title="Your colour" />
-            <span className={styles.swatch} style={{ background: table ? gameColor(layer.color, table) : layer.color }} title="In game (after the template Levels)" />
+            <span className={styles.swatch} style={{ background: layer.color }} title={t('properties.yourColour')} />
+            <span className={styles.swatch} style={{ background: table ? gameColor(layer.color, table) : layer.color }} title={t('properties.gameColour')} />
           </div>
-          <span className={styles.note}>Left: your colour. Right: in game, after the template Levels.</span>
+          <span className={styles.note}>{t('properties.colourNote')}</span>
         </div>
       </div>
 
       <label className={styles.label}>
-        Opacity {Math.round(layer.opacity * 100)} %
+        {t('properties.opacity', { value: Math.round(layer.opacity * 100) })}
         <Slider.Root
           className={styles.slider}
           min={0}
@@ -57,7 +59,7 @@ export function PropertiesPanel({ layer, table, updateLayer, beginGesture, endGe
           <Slider.Track className={styles.track}>
             <Slider.Range className={styles.range} />
           </Slider.Track>
-          <Slider.Thumb className={styles.thumb} aria-label="Opacity" />
+          <Slider.Thumb className={styles.thumb} aria-label={t('properties.opacity', { value: Math.round(layer.opacity * 100) })} />
         </Slider.Root>
       </label>
 
@@ -65,14 +67,14 @@ export function PropertiesPanel({ layer, table, updateLayer, beginGesture, endGe
         <div className={styles.grid}>
           <NumberField label="X" value={layer.transform.x} onCommit={(x) => transform({ x })} />
           <NumberField label="Y" value={layer.transform.y} onCommit={(y) => transform({ y })} />
-          <NumberField label="Rotation °" value={layer.transform.rotation} onCommit={(rotation) => transform({ rotation })} />
-          <NumberField label="Scale X" value={layer.transform.scaleX} step={0.01} onCommit={(scaleX) => transform({ scaleX })} />
-          <NumberField label="Scale Y" value={layer.transform.scaleY} step={0.01} onCommit={(scaleY) => transform({ scaleY })} />
+          <NumberField label={t('properties.rotation')} value={layer.transform.rotation} onCommit={(rotation) => transform({ rotation })} />
+          <NumberField label={t('properties.scaleX')} value={layer.transform.scaleX} step={0.01} onCommit={(scaleX) => transform({ scaleX })} />
+          <NumberField label={t('properties.scaleY')} value={layer.transform.scaleY} step={0.01} onCommit={(scaleY) => transform({ scaleY })} />
           {layer.kind === 'rect' && (
             <>
-              <NumberField label="Width" value={layer.width} min={1} onCommit={(width) => update({ width })} />
-              <NumberField label="Height" value={layer.height} min={1} onCommit={(height) => update({ height })} />
-              <NumberField label="Corner radius" value={layer.cornerRadius} min={0} onCommit={(cornerRadius) => update({ cornerRadius })} />
+              <NumberField label={t('properties.width')} value={layer.width} min={1} onCommit={(width) => update({ width })} />
+              <NumberField label={t('properties.height')} value={layer.height} min={1} onCommit={(height) => update({ height })} />
+              <NumberField label={t('properties.cornerRadius')} value={layer.cornerRadius} min={0} onCommit={(cornerRadius) => update({ cornerRadius })} />
             </>
           )}
         </div>
@@ -81,12 +83,12 @@ export function PropertiesPanel({ layer, table, updateLayer, beginGesture, endGe
       {layer.kind === 'text' && (
         <>
           <label className={styles.label}>
-            Text
+            {t('properties.text')}
             <TextField value={layer.text} onCommit={(text) => update({ text })} />
           </label>
           <div className={styles.grid}>
             <label className={styles.label}>
-              Font
+              {t('properties.font')}
               <Select.Root value={layer.fontFamily} onValueChange={(fontFamily) => update({ fontFamily: fontFamily as (typeof FONTS)[number] })}>
                 <Select.Trigger className={styles.input}>
                   <Select.Value />
@@ -104,22 +106,22 @@ export function PropertiesPanel({ layer, table, updateLayer, beginGesture, endGe
                 </Select.Portal>
               </Select.Root>
             </label>
-            <NumberField label="Size" value={layer.fontSize} min={4} onCommit={(fontSize) => update({ fontSize })} />
+            <NumberField label={t('properties.size')} value={layer.fontSize} min={4} onCommit={(fontSize) => update({ fontSize })} />
             <label className={styles.check}>
               <input
                 type="checkbox"
                 checked={!!layer.outline}
                 onChange={(e) => update({ outline: e.target.checked ? { color: '#000000', width: 12 } : null })}
               />
-              Outline
+              {t('properties.outline')}
             </label>
             {layer.outline && (
               <>
                 <label className={styles.label}>
-                  Outline colour
+                  {t('properties.outlineColour')}
                   <HexColorInput className={styles.input} color={layer.outline.color} onChange={(color) => update({ outline: { ...layer.outline!, color } })} prefixed />
                 </label>
-                <NumberField label="Outline width" value={layer.outline.width} min={0} onCommit={(width) => update({ outline: { ...layer.outline!, width } })} />
+                <NumberField label={t('properties.outlineWidth')} value={layer.outline.width} min={0} onCommit={(width) => update({ outline: { ...layer.outline!, width } })} />
               </>
             )}
           </div>

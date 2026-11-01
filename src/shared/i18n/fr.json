@@ -1,0 +1,220 @@
+{
+  "app": {
+    "mark": "LIVRÉE",
+    "back": "Retour",
+    "language": "Langue",
+    "openProject": "Ouvrir un projet",
+    "openProjectHint": "Ouvrir un projet (Ctrl+O)",
+    "untitled": "Livrée sans titre",
+    "ok": "OK",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "dontSave": "Ne pas enregistrer"
+  },
+  "locate": {
+    "title": "Éditeur de livrée",
+    "searching": "Recherche de Le Mans Ultimate…",
+    "notFound": "Le Mans Ultimate introuvable",
+    "invalid": "Le dossier {{folder}} ne contient pas de dossier support/LiveryTemplates. Sélectionnez le dossier d'installation du jeu.",
+    "selectHint": "Sélectionnez le dossier d'installation du jeu, par exemple …\\steamapps\\common\\Le Mans Ultimate.",
+    "selectFolder": "Sélectionner le dossier"
+  },
+  "gameFolder": {
+    "button": "Dossier du jeu",
+    "title": "Dossier du jeu",
+    "description": "Le Mans Ultimate ({{source}}) :",
+    "source": {
+      "settings": "paramètre enregistré",
+      "auto": "trouvé automatiquement",
+      "manual": "sélectionné par vous"
+    },
+    "selectAnother": "Sélectionner un autre dossier",
+    "close": "Fermer"
+  },
+  "select": {
+    "title": "Sélectionner un modèle",
+    "readingTemplates": "Lecture des modèles…",
+    "noTemplates": "Aucun modèle dans le dossier du jeu.",
+    "templateFound": "Modèle trouvé · {{size}}",
+    "continue": "Poursuivre",
+    "category": "Catégorie",
+    "car": "Voiture",
+    "variant": "Variante",
+    "variantCount_one": "{{count}} variante",
+    "variantCount_other": "{{count}} variantes"
+  },
+  "editor": {
+    "title": "Modifier la livrée",
+    "canvas": "Zone de dessin",
+    "stage": {
+      "reading": "Lecture du modèle",
+      "parsing": "Lecture des calques",
+      "guides": "Dessin des repères",
+      "segments": "Dessin du modèle",
+      "export-skin": "Dessin de la livrée",
+      "export-regions": "Dessin de la carte de la région",
+      "writing": "Écriture des fichiers",
+      "loading": "Chargement"
+    },
+    "cannotOpenTemplate": "Impossible d'ouvrir le modèle : {{error}}",
+    "updating": "Mise à jour du modèle…",
+    "templateChanged": "Ce modèle a changé depuis l'enregistrement du projet (sans doute une mise à jour du jeu). Vérifiez la position de vos calques.",
+    "undo": "Annuler (Ctrl+Z)",
+    "redo": "Rétablir (Ctrl+Y)",
+    "fit": "Ajuster",
+    "tabs": {
+      "label": "Panneaux de l'éditeur",
+      "layers": "Calques",
+      "template": "Modèle",
+      "regions": "Régions"
+    },
+    "loading": "Chargement…",
+    "regionHead": "Région",
+    "regionColourHead": "Couleur dans la carte de la région",
+    "view": "Aperçu",
+    "viewLivery": "Livrée",
+    "viewRegions": "Carte de la région",
+    "guides": "Repères",
+    "wireframe": "Maillage",
+    "mask": "Masque",
+    "save": "Enregistrer",
+    "saveHint": "Enregistrer (Ctrl+S)",
+    "saveAs": "Enregistrer sous",
+    "saveAsHint": "Enregistrer sous (Ctrl+Maj+S)",
+    "status": "Chargé en {{load}} · modèle dessiné en {{draw}} · {{preview}}",
+    "preview": {
+      "exact": "aperçu exact",
+      "exactDone": "aperçu exact ({{time}})",
+      "exactPending": "aperçu rapide · aperçu exact en cours…",
+      "approximate": "aperçu rapide (approximatif)"
+    },
+    "exportToFolder": "Exporter dans un dossier",
+    "exportToFolderHint": "Écrire les deux fichiers TGA dans le dossier de votre choix",
+    "export": "Exporter"
+  },
+  "export": {
+    "confirmTitle": "Exporter vers le jeu",
+    "confirmText": "Le jeu n'a qu'une seule livrée personnalisée pour toutes les voitures ({{slot}}). L'export remplace les fichiers présents. L'application garde les fichiers précédents dans {{backups}} (les 5 derniers exports).",
+    "doneTitle": "Livrée exportée",
+    "doneFiles": "customskin.tga et customskin_region.tga sont dans {{folder}}.",
+    "doneBackup": "Les fichiers précédents sont dans {{folder}}.",
+    "doneReload": "Dans le jeu : ouvrez la {{car}} dans le showroom et appuyez sur RELOAD.",
+    "failedTitle": "Échec de l'export"
+  },
+  "project": {
+    "unsavedTitle": "Modifications non enregistrées",
+    "unsavedText": "Votre livrée contient des modifications non enregistrées. Voulez-vous les enregistrer d'abord ?",
+    "cannotOpen": "Impossible d'ouvrir le projet",
+    "cannotSave": "Impossible d'enregistrer le projet",
+    "invalid": "{{file}} n'est pas un projet valide :",
+    "templateMissingTitle": "Modèle non installé",
+    "templateMissing": "{{file}} utilise le modèle {{template}}, absent de votre dossier du jeu.",
+    "templateMissingHelp": "Installez ou mettez à jour la voiture dans le jeu, puis ouvrez de nouveau le projet.",
+    "error": {
+      "notJson": "Le fichier n'est pas un JSON valide.",
+      "notProject": "Le fichier n'est pas un projet de livrée LMU.",
+      "newerVersion": "Le fichier a été créé avec une version plus récente de l'application (format {{version}}). Mettez l'application à jour.",
+      "templateMismatch": "document.templateId : ne correspond pas à template.id",
+      "field": "{{path}} : {{message}}"
+    }
+  },
+  "tools": {
+    "label": "Outils",
+    "select": "Sélectionner et déplacer",
+    "rect": "Rectangle (glisser)",
+    "polygon": "Polygone (cliquez les points, double-clic ou Entrée pour fermer)",
+    "text": "Texte (cliquez pour placer)",
+    "addFill": "Ajouter un fond",
+    "addFillHint": "Ajouter un calque de fond sous vos calques"
+  },
+  "layers": {
+    "label": "Vos calques",
+    "empty": "Aucun calque. Utilisez les outils à gauche de la zone de dessin.",
+    "visible": "Visible",
+    "locked": "Verrouillé",
+    "renameHint": "Double-cliquez pour renommer",
+    "moveUp": "Monter",
+    "moveDown": "Descendre",
+    "duplicate": "Dupliquer",
+    "delete": "Supprimer",
+    "region": "Région",
+    "kind": {
+      "fill": "Fond",
+      "rect": "Rectangle",
+      "polygon": "Polygone",
+      "text": "Texte"
+    },
+    "defaultName": "{{kind}} {{count}}",
+    "copyName": "{{name}} copie"
+  },
+  "properties": {
+    "label": "Propriétés du calque",
+    "colour": "Couleur",
+    "yourColour": "Votre couleur",
+    "gameColour": "En jeu (après les niveaux du modèle)",
+    "colourNote": "Gauche : votre couleur. Droite : en jeu, après les niveaux du modèle.",
+    "opacity": "Opacité {{value}} %",
+    "rotation": "Rotation °",
+    "scaleX": "Échelle X",
+    "scaleY": "Échelle Y",
+    "width": "Largeur",
+    "height": "Hauteur",
+    "cornerRadius": "Rayon des coins",
+    "text": "Texte",
+    "font": "Police",
+    "size": "Taille",
+    "outline": "Contour",
+    "outlineColour": "Couleur du contour",
+    "outlineWidth": "Épaisseur du contour"
+  },
+  "template": {
+    "hint": "Vos calques restent sous les niveaux du modèle, pour que la plage de couleurs du jeu s'applique.",
+    "yourLayers": "Vos calques",
+    "moveUp": "Monter vos calques",
+    "moveDown": "Descendre vos calques",
+    "show": "Afficher {{name}}",
+    "adjustment": "réglage",
+    "group": "groupe"
+  },
+  "regions": {
+    "base": "Base",
+    "carbon": "Carbone",
+    "option1": "Option 1",
+    "option2": "Option 2",
+    "stickers": "Autocollants"
+  },
+  "dialogs": {
+    "chooseGameFolder": "Sélectionnez le dossier d'installation de Le Mans Ultimate",
+    "openProject": "Ouvrir un projet de livrée",
+    "saveProject": "Enregistrer le projet de livrée",
+    "projectFilter": "Projet de livrée LMU",
+    "exportFolder": "Sélectionnez un dossier pour customskin.tga et customskin_region.tga",
+    "replaceTitle": "Ce dossier contient déjà des fichiers de livrée.",
+    "replaceText": "Remplacer customskin.tga et customskin_region.tga dans ce dossier ?",
+    "replace": "Remplacer",
+    "unsavedCloseTitle": "Modifications non enregistrées",
+    "unsavedCloseMessage": "Votre livrée contient des modifications non enregistrées.",
+    "unsavedCloseDetail": "Voulez-vous les enregistrer avant de fermer l'application ?"
+  },
+  "errors": {
+    "fileTooLarge": "Le fichier est trop volumineux ({{size}} Mo ; la limite est de {{limit}} Mo).",
+    "cannotRead": "Impossible de lire le fichier : {{error}}",
+    "cannotWrite": "Impossible d'écrire les fichiers : {{error}}",
+    "badRequest": "Requête invalide.",
+    "gameFolderUnknown": "Le dossier du jeu est inconnu.",
+    "badTga": "{{file}} n'est pas un fichier TGA valide pour le jeu : {{error}}",
+    "exportRunning": "Un export est déjà en cours.",
+    "editorClosed": "L'éditeur a été fermé."
+  },
+  "units": {
+    "seconds": "{{value}} s",
+    "megabytes": "{{value}} Mo"
+  },
+  "validation": {
+    "colour": "doit être une couleur #rrggbb",
+    "minPoints": "il faut au moins 3 points",
+    "evenPoints": "il faut un nombre pair de coordonnées",
+    "uniqueIds": "les identifiants des calques doivent être uniques",
+    "layerPath": "doit être un chemin d'indices de calque"
+  }
+}

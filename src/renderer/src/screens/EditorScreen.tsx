@@ -1,5 +1,6 @@
 import { Tabs, Toggle, ToggleGroup } from 'radix-ui'
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useStore } from 'zustand'
 import type { Car, Category, TemplateVariant } from '../../../shared/api'
 import { serializeProject } from '../../../shared/project'
@@ -15,6 +16,7 @@ import { PropertiesPanel } from '../editor/PropertiesPanel'
 import { TemplatePanel } from '../editor/TemplatePanel'
 import { createTemplateStore, type TemplateStore } from '../editor/templateStore'
 import { Toolbar } from '../editor/Toolbar'
+import { formatSeconds } from '../i18n'
 import styles from './EditorScreen.module.css'
 
 /** Lets the app ask the editor about unsaved changes before it leaves the editor. */
@@ -35,15 +37,6 @@ type Props = {
 
 const rgb = ([r, g, b]: number[]) => `rgb(${r} ${g} ${b})`
 
-const STAGE_TEXT = {
-  reading: 'Reading the template',
-  parsing: 'Reading the layers',
-  guides: 'Drawing the guides',
-  segments: 'Drawing the template',
-  'export-skin': 'Drawing the livery',
-  'export-regions': 'Drawing the region map'
-}
-
 type ExportTarget = 'game' | 'folder'
 type ExportReport = { title: string; lines: string[] }
 
@@ -52,7 +45,7 @@ const EXACT_DELAY_MS = 600
 
 const TOOL_KEYS: Record<string, Tool> = { v: 'select', r: 'rect', p: 'polygon', t: 'text' }
 
-const seconds = (ms: number | null) => (ms === null ? '…' : `${(ms / 1000).toFixed(1)} s`)
+const seconds = (ms: number | null) => (ms === null ? '…' : formatSeconds(ms))
 
 /** Editor in the style of the game livery showroom. */
 export function EditorScreen(props: Props) {
@@ -68,7 +61,8 @@ export function EditorScreen(props: Props) {
 }
 
 function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle, onError, templateStore, documentStore }: Props & { templateStore: TemplateStore; documentStore: DocumentStore }) {
-  const t = useStore(templateStore)
+  const { t } = useTranslation()
+  const template = useStore(templateStore)
   const d = useStore(documentStore)
   const [view, setView] = useState<CanvasView>('livery')
   const [guides, setGuides] = useState<GuideOptions>({ wireframe: true, mask: true })
@@ -84,24 +78,24 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
   const allowClose = useRef(false)
   const dirty = hasUnsavedChanges(d)
 
-  const insertion = d.doc.insertion ?? t.outline?.defaultInsertion ?? null
+  const insertion = d.doc.insertion ?? template.outline?.defaultInsertion ?? null
   const selected = d.doc.layers.find((l) => l.id === d.selectedId) ?? null
 
   // Draw the template segments for the insertion point and visibility of the document.
   useEffect(() => {
-    if (insertion !== null) t.render(insertion, d.doc.templateVisibility)
-  }, [insertion, d.doc.templateVisibility, t.render])
+    if (insertion !== null) template.render(insertion, d.doc.templateVisibility)
+  }, [insertion, d.doc.templateVisibility, template.render])
 
   // Exact preview: after the edits stop, only when the fast preview is not exact (ADR-0018).
   useEffect(() => {
-    t.clearExact()
-    if (!t.segments || t.segments.fastIsExact || t.updating || insertion === null) return
-    const { width, height } = t.outline!
+    template.clearExact()
+    if (!template.segments || template.segments.fastIsExact || template.updating || insertion === null) return
+    const { width, height } = template.outline!
     const timer = setTimeout(async () => {
-      t.requestExact(await rasterizeSkin(d.doc.layers, width, height), insertion, d.doc.templateVisibility)
+      template.requestExact(await rasterizeSkin(d.doc.layers, width, height), insertion, d.doc.templateVisibility)
     }, EXACT_DELAY_MS)
     return () => clearTimeout(timer)
-  }, [d.doc, d.selectedId, t.segments, t.updating, insertion])
+  }, [d.doc, d.selectedId, template.segments, template.updating, insertion])
 
   /** Saves the project. "Save as" (or the first save) asks for a file. Returns true when the file is written. */
   const save = useCallback(
@@ -117,7 +111,7 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
 
   guardRef.current = { hasUnsavedChanges: () => hasUnsavedChanges(documentStore.getState()), save: () => save(false) }
 
-  useEffect(() => onTitle(`${d.fileName ?? 'Untitled livery'}${dirty ? ' •' : ''}`), [d.fileName, dirty, onTitle])
+  useEffect(() => onTitle(`${d.fileName ?? t('app.untitled')}${dirty ? ' •' : ''}`), [d.fileName, dirty, onTitle, t])
 
   // Closing the window with unsaved changes: block the unload; the main process asks the user (ADR-0021).
   useEffect(() => {
@@ -141,28 +135,28 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
 
   /** Makes the two TGA files in the worker, then the main process writes them (ADR-0022). */
   const runExport = async (target: ExportTarget) => {
-    if (!t.outline || insertion === null) return
-    const { width, height } = t.outline
+    if (!template.outline || insertion === null) return
+    const { width, height } = template.outline
     const { doc } = documentStore.getState()
     try {
       const [user, userRegions] = await Promise.all([rasterizeSkin(doc.layers, width, height), rasterizeRegions(doc.layers, width, height)])
-      const files = await t.exportFiles(user, userRegions, insertion, doc.templateVisibility)
+      const files = await template.exportFiles(user, userRegions, insertion, doc.templateVisibility)
       setWriting(true)
       const result = target === 'game' ? await window.lmu.exportToGame(files.skin, files.region) : await window.lmu.exportToFolder(files.skin, files.region)
       setWriting(false)
       if (result.status === 'cancelled') return
-      if (result.status === 'error') return setReport({ title: 'Export failed', lines: [result.message] })
+      if (result.status === 'error') return setReport({ title: t('export.failedTitle'), lines: [result.message] })
       setReport({
-        title: 'Livery exported',
+        title: t('export.doneTitle'),
         lines: [
-          `customskin.tga and customskin_region.tga are in ${result.folder}.`,
-          ...(result.backup ? [`The previous files are in ${result.backup}.`] : []),
-          ...(target === 'game' ? [`In the game: open the ${car.name} in the showroom and press RELOAD.`] : [])
+          t('export.doneFiles', { folder: result.folder }),
+          ...(result.backup ? [t('export.doneBackup', { folder: result.backup })] : []),
+          ...(target === 'game' ? [t('export.doneReload', { car: car.name })] : [])
         ]
       })
     } catch (error) {
       setWriting(false)
-      setReport({ title: 'Export failed', lines: [(error as Error).message] })
+      setReport({ title: t('export.failedTitle'), lines: [(error as Error).message] })
     }
   }
 
@@ -200,15 +194,15 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
     return () => window.removeEventListener('keydown', onKey)
   }, [documentStore, save])
 
-  const previewText = !t.segments
+  const previewText = !template.segments
     ? ''
-    : t.segments.fastIsExact
-      ? 'preview exact'
-      : t.exact
-        ? `exact preview (${seconds(t.timings.exactMs)})`
-        : t.exactPending
-          ? 'fast preview · exact preview in progress…'
-          : 'fast preview (approximate)'
+    : template.segments.fastIsExact
+      ? t('editor.preview.exact')
+      : template.exact
+        ? t('editor.preview.exactDone', { time: seconds(template.timings.exactMs) })
+        : template.exactPending
+          ? t('editor.preview.exactPending')
+          : t('editor.preview.approximate')
 
   return (
     <main className={styles.screen}>
@@ -220,9 +214,9 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
         <p className={styles.variant}>{variant.label}</p>
       </section>
 
-      <section className={styles.canvas} aria-label="Canvas">
+      <section className={styles.canvas} aria-label={t('editor.canvas')}>
         <EditorCanvas
-          template={t}
+          template={template}
           document={{ ...d, layers: d.doc.layers }}
           tool={tool}
           onToolDone={() => setTool('select')}
@@ -231,62 +225,67 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
           fitSignal={fitSignal}
           onZoomChange={setZoom}
         />
-        {t.status === 'ready' && <Toolbar tool={tool} onTool={setTool} onAddFill={addFill} />}
-        {t.status !== 'ready' && (
+        {template.status === 'ready' && <Toolbar tool={tool} onTool={setTool} onAddFill={addFill} />}
+        {template.status !== 'ready' && (
           <div className={styles.overlay}>
-            {t.status === 'error' ? (
-              <p className={styles.error}>Cannot open the template: {t.error}</p>
+            {template.status === 'error' ? (
+              <p className={styles.error}>{t('editor.cannotOpenTemplate', { error: template.error })}</p>
             ) : (
               <>
-                <p>{t.stage ? STAGE_TEXT[t.stage] : 'Loading'}…</p>
+                <p>{t(`editor.stage.${template.stage ?? 'loading'}`)}…</p>
                 <div className={styles.progress}>
-                  <div className={t.fraction === null ? styles.progressBusy : styles.progressBar} style={{ width: t.fraction === null ? undefined : `${t.fraction * 100}%` }} />
+                  <div className={template.fraction === null ? styles.progressBusy : styles.progressBar} style={{ width: template.fraction === null ? undefined : `${template.fraction * 100}%` }} />
                 </div>
               </>
             )}
           </div>
         )}
-        {(t.exporting || writing) && (
+        {(template.exporting || writing) && (
           <div className={styles.overlay}>
-            <p>{writing ? 'Writing the files' : t.stage ? STAGE_TEXT[t.stage] : 'Exporting'}…</p>
+            <p>{t(`editor.stage.${writing ? 'writing' : (template.stage ?? 'loading')}`)}…</p>
             <div className={styles.progress}>
               <div className={styles.progressBusy} />
             </div>
           </div>
         )}
-        {t.status === 'ready' && t.updating && <div className={styles.updating}>Updating the template…</div>}
+        {template.status === 'ready' && template.updating && <div className={styles.updating}>{t('editor.updating')}</div>}
         {showTemplateWarning && (
           <div className={styles.warning} role="alert">
-            This template changed since the project was saved (probably a game update). Check the positions of your layers.
+            {t('editor.templateChanged')}
             <button className={styles.toolButton} onClick={() => setShowTemplateWarning(false)}>
               OK
             </button>
           </div>
         )}
+        {template.status === 'ready' && (
+          <div className={styles.status}>
+            {t('editor.status', { load: seconds(template.timings.loadMs), draw: seconds(template.timings.segmentsMs), preview: previewText })}
+          </div>
+        )}
         <div className={styles.canvasTools}>
-          <button className={styles.toolButton} onClick={d.undo} disabled={!d.past.length} aria-label="Undo (Ctrl+Z)">
+          <button className={styles.toolButton} onClick={d.undo} disabled={!d.past.length} aria-label={t('editor.undo')} title={t('editor.undo')}>
             ↶
           </button>
-          <button className={styles.toolButton} onClick={d.redo} disabled={!d.future.length} aria-label="Redo (Ctrl+Y)">
+          <button className={styles.toolButton} onClick={d.redo} disabled={!d.future.length} aria-label={t('editor.redo')} title={t('editor.redo')}>
             ↷
           </button>
           <span>{Math.round(zoom * 100)} %</span>
           <button className={styles.toolButton} onClick={() => setFitSignal(fitSignal + 1)}>
-            Fit
+            {t('editor.fit')}
           </button>
         </div>
       </section>
 
       <Tabs.Root className={styles.panel} value={tab} onValueChange={setTab}>
-        <Tabs.List className={styles.tabs} aria-label="Editor panels">
+        <Tabs.List className={styles.tabs} aria-label={t('editor.tabs.label')}>
           <Tabs.Trigger className={styles.tab} value="layers">
-            Layers
+            {t('editor.tabs.layers')}
           </Tabs.Trigger>
           <Tabs.Trigger className={styles.tab} value="template">
-            Template
+            {t('editor.tabs.template')}
           </Tabs.Trigger>
           <Tabs.Trigger className={styles.tab} value="regions">
-            Regions
+            {t('editor.tabs.regions')}
           </Tabs.Trigger>
         </Tabs.List>
         <Tabs.Content className={styles.tabContent} value="layers">
@@ -295,7 +294,7 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
             <PropertiesPanel
               key={selected.id}
               layer={selected}
-              table={t.segments?.table ?? null}
+              table={template.segments?.table ?? null}
               updateLayer={d.updateLayer}
               beginGesture={d.beginGesture}
               endGesture={d.endGesture}
@@ -303,29 +302,29 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
           )}
         </Tabs.Content>
         <Tabs.Content className={styles.tabContent} value="template">
-          {t.outline && insertion !== null ? (
+          {template.outline && insertion !== null ? (
             <TemplatePanel
-              content={t.outline.content}
+              content={template.outline.content}
               visibility={d.doc.templateVisibility}
               insertion={insertion}
-              maxInsertion={t.outline.maxInsertion}
+              maxInsertion={template.outline.maxInsertion}
               onVisible={d.setTemplateVisible}
-              onInsertion={(n) => d.setInsertion(Math.max(1, Math.min(t.outline!.maxInsertion, n)))}
+              onInsertion={(n) => d.setInsertion(Math.max(1, Math.min(template.outline!.maxInsertion, n)))}
             />
           ) : (
-            <p className={styles.empty}>Loading…</p>
+            <p className={styles.empty}>{t('editor.loading')}</p>
           )}
         </Tabs.Content>
         <Tabs.Content className={styles.tabContent} value="regions">
           <div className={styles.rowHead}>
-            <span>Region</span>
-            <span>Colour in the region map</span>
+            <span>{t('editor.regionHead')}</span>
+            <span>{t('editor.regionColourHead')}</span>
           </div>
           {REGIONS.map((r) => (
             <div key={r.id} className={styles.row}>
               <span className={styles.regionName}>
                 <span className={styles.swatch} style={{ background: rgb(r.rgb) }} />
-                {r.name}
+                {t(`regions.${r.id}`)}
               </span>
               <code>{rgb(r.rgb)}</code>
             </div>
@@ -334,65 +333,55 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
       </Tabs.Root>
 
       <footer className={styles.bottom}>
-        <span className={styles.bottomLabel}>View</span>
-        <ToggleGroup.Root type="single" className={styles.segmented} value={view} onValueChange={(v) => v && setView(v as CanvasView)} aria-label="View">
+        <span className={styles.bottomLabel}>{t('editor.view')}</span>
+        <ToggleGroup.Root type="single" className={styles.segmented} value={view} onValueChange={(v) => v && setView(v as CanvasView)} aria-label={t('editor.view')}>
           <ToggleGroup.Item className={styles.segment} value="livery">
-            Livery
+            {t('editor.viewLivery')}
           </ToggleGroup.Item>
           <ToggleGroup.Item className={styles.segment} value="regions">
-            Region map
+            {t('editor.viewRegions')}
           </ToggleGroup.Item>
         </ToggleGroup.Root>
-        <span className={styles.bottomLabel}>Guides</span>
+        <span className={styles.bottomLabel}>{t('editor.guides')}</span>
         <Toggle.Root className={styles.chip} pressed={guides.wireframe} onPressedChange={(wireframe) => setGuides({ ...guides, wireframe })}>
-          Wireframe
+          {t('editor.wireframe')}
         </Toggle.Root>
         <Toggle.Root className={styles.chip} pressed={guides.mask} onPressedChange={(mask) => setGuides({ ...guides, mask })}>
-          Mask
+          {t('editor.mask')}
         </Toggle.Root>
         <span className={styles.spacer} />
-        <Button onClick={() => save(false)} title="Save (Ctrl+S)">
-          Save
+        <Button onClick={() => save(false)} title={t('editor.saveHint')}>
+          {t('editor.save')}
         </Button>
-        <Button onClick={() => save(true)} title="Save as (Ctrl+Shift+S)">
-          Save as
+        <Button onClick={() => save(true)} title={t('editor.saveAsHint')}>
+          {t('editor.saveAs')}
         </Button>
-        <span className={styles.status}>
-          {t.status === 'ready' && (
-            <>
-              Loaded in {seconds(t.timings.loadMs)} · template drawn in {seconds(t.timings.segmentsMs)} · {previewText}
-            </>
-          )}
-        </span>
-        <Button onClick={() => runExport('folder')} disabled={t.status !== 'ready' || t.exporting || writing} title="Write the two TGA files into a folder of your choice">
-          Export to folder
+        <Button onClick={() => runExport('folder')} disabled={template.status !== 'ready' || template.exporting || writing} title={t('editor.exportToFolderHint')}>
+          {t('editor.exportToFolder')}
         </Button>
-        <Button variant="primary" size="large" onClick={() => setConfirmGameExport(true)} disabled={t.status !== 'ready' || t.exporting || writing}>
-          Export
+        <Button variant="primary" size="large" onClick={() => setConfirmGameExport(true)} disabled={template.status !== 'ready' || template.exporting || writing}>
+          {t('editor.export')}
         </Button>
       </footer>
 
       <ConfirmDialog
         open={confirmGameExport}
-        title="Export to the game"
+        title={t('export.confirmTitle')}
         actions={[
           {
-            label: 'Export',
+            label: t('editor.export'),
             primary: true,
             onSelect: () => {
               setConfirmGameExport(false)
               void runExport('game')
             }
           },
-          { label: 'Cancel', onSelect: () => setConfirmGameExport(false) }
+          { label: t('app.cancel'), onSelect: () => setConfirmGameExport(false) }
         ]}
       >
-        <p>
-          The game has one custom livery for all cars (<code>UserData\Liveries</code>). The export replaces the files that are there now. The app keeps the previous
-          files in <code>UserData\Liveries\Backups</code> (the last 5 exports).
-        </p>
+        <p>{t('export.confirmText', { slot: 'UserData\\Liveries', backups: 'UserData\\Liveries\\Backups' })}</p>
       </ConfirmDialog>
-      <ConfirmDialog open={report !== null} title={report?.title ?? ''} actions={[{ label: 'OK', primary: true, onSelect: () => setReport(null) }]}>
+      <ConfirmDialog open={report !== null} title={report?.title ?? ''} actions={[{ label: t('app.ok'), primary: true, onSelect: () => setReport(null) }]}>
         {report?.lines.map((line) => (
           <p key={line}>{line}</p>
         ))}
