@@ -9,7 +9,7 @@ type Props = {
   onChoose: () => void
 }
 
-/** Shows the game folder in use, and lets the user select another one. */
+/** Shows the game folder in use, and lets the user select another one. Also shows the app version (About). */
 export function GameFolderDialog({ location, onChoose }: Props) {
   const { t } = useTranslation()
   return (
@@ -29,6 +29,14 @@ export function GameFolderDialog({ location, onChoose }: Props) {
             {t('gameFolder.description', { source: t(`gameFolder.source.${location.source}`) })}
           </Dialog.Description>
           <code className={styles.path}>{location.gameDir}</code>
+          <section className={styles.about} aria-labelledby="about-title">
+            <h3 id="about-title" className={styles.aboutTitle}>
+              {t('about.title')}
+            </h3>
+            <p>{t('about.version', { version: __APP_VERSION__ })}</p>
+            <p>{t('about.licence')}</p>
+            <p className={styles.disclaimer}>{t('about.disclaimer')}</p>
+          </section>
           <div className={styles.actions}>
             <Button onClick={onChoose}>{t('gameFolder.selectAnother')}</Button>
             <Dialog.Close asChild>

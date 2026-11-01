@@ -17,3 +17,18 @@ test.describe('game folder', () => {
     await expect(page.getByRole('radiogroup', { name: 'Car' }).getByRole('radio')).toHaveText([/Aston Martin Valkyrie/, /Lamborghini SC63/])
   })
 })
+
+test.describe('about', () => {
+  test.use({ options: { gameKnown: true, language: 'en' } })
+
+  test('shows the app version in the window title and in the game folder dialog', async ({ app }) => {
+    const { version } = (await import('../../package.json', { with: { type: 'json' } })).default
+    const title = await app.electronApp.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getTitle())
+    expect(title).toBe(`LMU Livery Editor ${version}`)
+
+    await app.page.getByRole('button', { name: 'Game folder' }).click()
+    const about = app.page.getByRole('region', { name: 'About' })
+    await expect(about).toContainText(`version ${version}`)
+    await expect(about).toContainText('not made or approved by Motorsport Games')
+  })
+})

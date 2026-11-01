@@ -45,19 +45,18 @@ jobs:
       - name: End-to-end tests
         run: npm run e2e
 
-      - name: Windows build
-        run: npm run dist:win
+      - name: Windows installer
+        run: npm run dist:installer
 
       - name: Dependency audit (report only)
         run: npm audit --audit-level=high
         continue-on-error: true
 
-      - name: Upload the Windows build
-        if: github.event_name != 'pull_request'
+      - name: Upload the Windows installer
         uses: actions/upload-artifact@v6
         with:
-          name: lmu-livery-editor-win
-          path: dist/win-unpacked
+          name: lmu-livery-editor-setup
+          path: dist/LMU-Livery-Editor-Setup-*.exe
           retention-days: 7
 
       - name: Upload the Playwright report
