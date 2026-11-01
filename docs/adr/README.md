@@ -62,6 +62,7 @@ What goes into the files that the game reads.
 - [0027](0027-test-strategy.md) Test strategy: synthetic templates, integration tests, end-to-end tests
 - [0028](0028-ci.md) Continuous integration on GitHub Actions, Windows only
 - [0029](0029-branch-workflow.md) Branch workflow: GitHub Flow with a protected master
+- [0030](0030-distribution-and-updates.md) Distribution and updates: NSIS installer, GitHub releases, release-please, electron-updater
 
 ### User interface
 
@@ -83,7 +84,8 @@ npm run lint                # oxlint (see ADR-0026)
 npm run format              # oxfmt; npm run format:check in CI
 npm run check               # format check + lint + typecheck + tests; stops at the first failure
 npm run dev                 # app with hot reload (on Linux: select the game folder by hand)
-npm run dist:win            # Windows build in dist/win-unpacked
+npm run dist:win            # Windows test build in dist/win-unpacked (no installer)
+npm run dist:installer      # Windows installer in dist/ (on Windows only; CI does it, ADR-0030)
 LMU_WIN_HOST=user@host npm run deploy:win
 npm run audit:build         # template audit, see ADR-0012
 ```
