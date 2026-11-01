@@ -3,5 +3,3 @@
 *.png binary
 *.psd binary
 *.tga binary
-# README.md keeps its original line ends (the user's notes; oxfmt ignores it).
-README.md -text

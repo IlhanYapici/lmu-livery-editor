@@ -1,30 +1,58 @@
+# LMU Livery Editor
+
 [![CI](https://github.com/IlhanYapici/lmu-livery-editor/actions/workflows/ci.yml/badge.svg)](https://github.com/IlhanYapici/lmu-livery-editor/actions/workflows/ci.yml)
 
+A Windows app to make car liveries for Le Mans Ultimate (LMU). It reads the livery templates of your game install, lets you paint over them in 2D, and writes the two livery files into the game.
 
-1. Trouver les fichiers modèles (Templates)
+## Installation
 
-• Allez dans le répertoire d'installation de Steam : `.../Steam/steamapps/common/Le Mans Ultimate/support/LiveryTemplates/`
-• Ouvrez le dossier correspondant au modèle de voiture souhaité (ex: Lexus RCF, Porsche 911, etc.).
-• Le dossier contient des fichiers au format PSD ou compatible avec Photoshop / GIMP. Ne modifiez pas les calques de plaques d'immatriculation ou de carbone de base.
+1. Open the [latest release](https://github.com/IlhanYapici/lmu-livery-editor/releases/latest).
+2. Download `LMU-Livery-Editor-Setup-<version>.exe` and run it. The installer needs no administrator rights: it installs the app for your Windows user only.
+3. The installer is not signed yet. Windows SmartScreen can show "Windows protected your PC". Click **More info**, then **Run anyway**.
 
-2. Concevoir la livrée et les régions de matériaux
+The app installs updates automatically: it downloads a new version in the background, then asks you to restart, or installs it when you quit.
 
-Vous devez créer deux fichiers distincts en format TGA (.tga) non compressé (32 bits conseillé) :
-1. customskin.tga : Le design principal de la peinture de la voiture (désactivez les calques de grille/mesh avant l'export).
-2. customskin_region.tga : La carte des matériaux et finitions basée sur des codes couleur spécifiques :
-	• Noir : Peinture de base / métallique / flake
-	• Rouge : Finition Carbone (Carbon override)
-	• Bleu / Vert : Chrome, autocollants ou finitions vinyle
-	• Blanc : Logos et plaques de course
-Important lors de l'exportation en TGA : Décochez l'option "Use RLE compression" (compression RLE) dans la fenêtre d'export pour éviter d'altérer les textures.
+## Usage
 
-3. Installer les fichiers dans le jeu
+1. Start the app. It finds the game in your Steam libraries. If it does not, select the install folder of the game (for example `…\steamapps\common\Le Mans Ultimate`).
+2. Select a category, a car and a variant, then click **Continue**.
+3. Add fills, shapes, text and images. Give each layer a region (see below).
+4. Click **Export**. The app writes the two files into `UserData\Liveries` of the game, after a backup of the old files.
+5. In the game, open the showroom of the car and click **RELOAD**.
 
-• Placez vos deux fichiers (customskin.tga et customskin_region.tga) dans le dossier des livrées de l'utilisateur :
-`.../Steam/steamapps/common/Le Mans Ultimate/UserData/Liveries/`
-• Lancez Le Mans Ultimate, rendez-vous dans le Showroom de la voiture concernée et cliquez sur RELOAD pour voir apparaître vos modifications.
+Save your work as a project (`.lmulivery`) to edit it again later.
 
-4. Utilisation en ligne (Multijoueur)
+## How LMU liveries work
 
-• Vous devez d'abord créer ou rejoindre une équipe en tant que chef d'équipe via le Team Hub.
-• Pour faire apparaître la livrée en course en ligne, un abonnement RaceControl Pro / Pro+ est requis pour procéder à l'UPLOAD (téléchargement/approbation) de la livrée et l'assigner à votre équipage (Assign to Lineup).
+The game gives one template (PSD file) per car in `…/Le Mans Ultimate/support/LiveryTemplates/`. Do not change the number plate layers or the base carbon layers of a template.
+
+A livery has two uncompressed TGA files (no RLE compression), in `…/Le Mans Ultimate/UserData/Liveries/`:
+
+1. `customskin.tga`: the paint of the car, without the guide layers (wireframe, mask).
+2. `customskin_region.tga`: the region map. Each colour sets the material of that area:
+
+| Colour | Region in the app | Material                               |
+| ------ | ----------------- | -------------------------------------- |
+| Black  | Base              | Base paint (metallic, flake)           |
+| Red    | Carbon            | Carbon finish                          |
+| Green  | Option 1          | Chrome, sticker or vinyl finish        |
+| Blue   | Option 2          | Chrome, sticker or vinyl finish        |
+| White  | Stickers          | Logos, stickers and race number plates |
+
+The app writes both files for you.
+
+## Online use
+
+To show your livery in online races, you must create or join a team as the team leader in the Team Hub. A RaceControl Pro or Pro+ subscription is necessary to upload the livery and assign it to your lineup. These rules come from the game, not from this app: read the official guide, [How to create, upload and manage custom liveries in Le Mans Ultimate](https://guide.lemansultimate.com/hc/en-gb/articles/13211180344719-How-to-Create-Upload-and-Manage-custom-liveries-in-Le-Mans-Ultimate).
+
+## Notice
+
+This app is not made or approved by Motorsport Games, Studio 397 or the ACO. Le Mans Ultimate is a trademark of its owners. The app contains no game content: it reads the templates of your own game install.
+
+## Development
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) and the [architecture decision records](docs/adr/README.md).
+
+## Licence
+
+[MIT](LICENSE)
