@@ -9,13 +9,6 @@
     "types": ["node"],
     "resolveJsonModule": true
   },
-  "include": [
-    "electron.vite.config.mts",
-    "vitest.config.mts",
-    "scripts/**/*.ts",
-    "src/main/**/*",
-    "src/preload/**/*",
-    "src/shared/**/*",
-    "tests/**/*.ts"
-  ]
+  "include": ["electron.vite.config.mts", "vitest.config.mts", "scripts/**/*.ts", "tests/**/*.ts", "src/**/*"],
+  "exclude": ["src/renderer/**"]
 }

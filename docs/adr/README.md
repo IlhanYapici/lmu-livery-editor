@@ -72,7 +72,7 @@ What goes into the files that the game reads.
 ## Quick start for developers
 
 ```sh
-npm install                 # if Electron fails with "Electron uninstall": node node_modules/electron/install.js
+npm install                 # also installs the pre-commit hook (.githooks); if Electron fails with "Electron uninstall": node node_modules/electron/install.js
 npm test                    # unit and integration tests (vitest; synthetic templates, ADR-0027)
 npm run test:coverage       # coverage report in coverage/
 npm run typecheck

@@ -1,0 +1,11 @@
+#!/bin/sh
+# Blocks a commit that is not formatted, has lint errors or type errors (ADR-0026).
+# Installed by `npm install` (the "prepare" script sets core.hooksPath to .githooks).
+# Emergency bypass: git commit --no-verify (CI still runs every check).
+# Note: the checks run on the working tree, not only on the staged content.
+
+set -e
+echo "pre-commit: format check, lint, type check"
+npm run --silent format:check
+npm run --silent lint
+npm run --silent typecheck
