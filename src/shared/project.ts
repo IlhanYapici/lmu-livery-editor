@@ -113,21 +113,24 @@ export const assetSchema = z.object({
   height: z.number().int().min(1).max(MAX_IMAGE_PIXELS)
 })
 
-export const documentSchema = z.object({
-  version: z.literal(2),
-  templateId: z.string().min(1).max(500),
-  insertion: z.number().int().min(0).max(10_000).nullable(),
-  templateVisibility: z.record(z.string().regex(/^\d+(\/\d+)*$/, VALIDATION.layerPath), z.boolean()),
-  layers: z
-    .array(userLayerSchema)
-    .max(MAX_LAYERS)
-    .refine((layers) => new Set(layers.map((l) => l.id)).size === layers.length, VALIDATION.uniqueIds),
-  assets: z.record(assetIdSchema, assetSchema)
-}).superRefine((doc, context) => {
-  doc.layers.forEach((layer, i) => {
-    if (layer.kind === 'image' && !doc.assets[layer.assetId]) context.addIssue({ code: 'custom', path: ['layers', i, 'assetId'], message: VALIDATION.missingAsset })
+export const documentSchema = z
+  .object({
+    version: z.literal(2),
+    templateId: z.string().min(1).max(500),
+    insertion: z.number().int().min(0).max(10_000).nullable(),
+    templateVisibility: z.record(z.string().regex(/^\d+(\/\d+)*$/, VALIDATION.layerPath), z.boolean()),
+    layers: z
+      .array(userLayerSchema)
+      .max(MAX_LAYERS)
+      .refine((layers) => new Set(layers.map((l) => l.id)).size === layers.length, VALIDATION.uniqueIds),
+    assets: z.record(assetIdSchema, assetSchema)
   })
-})
+  .superRefine((doc, context) => {
+    doc.layers.forEach((layer, i) => {
+      if (layer.kind === 'image' && !doc.assets[layer.assetId])
+        context.addIssue({ code: 'custom', path: ['layers', i, 'assetId'], message: VALIDATION.missingAsset })
+    })
+  })
 
 export const projectSchema = z.object({
   format: z.literal(PROJECT_FORMAT),
@@ -187,7 +190,10 @@ export function parseProject(text: string): ParseResult {
   migrate(json as Record<string, unknown>)
   const result = projectSchema.safeParse(json)
   if (!result.success) {
-    return { ok: false, errors: result.error.issues.map((issue) => ({ code: 'field', path: pathText(issue.path) || 'file', message: issueMessage(issue) })) }
+    return {
+      ok: false,
+      errors: result.error.issues.map((issue) => ({ code: 'field', path: pathText(issue.path) || 'file', message: issueMessage(issue) }))
+    }
   }
   if (result.data.document.templateId !== result.data.template.id) {
     return { ok: false, errors: [{ code: 'templateMismatch' }] }

@@ -78,7 +78,10 @@ async function load(url: string) {
   const wireframe = guides.wireframe && (await toBitmap(guides.wireframe))
   const mask = guides.mask && (await toBitmap(guides.mask))
   const regions = await toBitmap(guides.regions)
-  post({ type: 'guides', wireframe, mask, regions, ms: performance.now() - start }, [wireframe, mask, regions].filter((b) => b !== null))
+  post(
+    { type: 'guides', wireframe, mask, regions, ms: performance.now() - start },
+    [wireframe, mask, regions].filter((b) => b !== null)
+  )
 }
 
 async function segments(request: Extract<WorkerRequest, { type: 'segments' }>) {
@@ -89,7 +92,16 @@ async function segments(request: Extract<WorkerRequest, { type: 'segments' }>) {
   const below = await toBitmap(s.below)
   const above = await toBitmap(s.above)
   post(
-    { type: 'segments', requestId: request.requestId, below, above, table: s.table, fastIsExact: s.fastIsExact, unsupported: s.unsupported, ms: performance.now() - start },
+    {
+      type: 'segments',
+      requestId: request.requestId,
+      below,
+      above,
+      table: s.table,
+      fastIsExact: s.fastIsExact,
+      unsupported: s.unsupported,
+      ms: performance.now() - start
+    },
     [below, above]
   )
 }

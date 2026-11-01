@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { bytesToBase64, MAX_LAYERS, parseProject, serializeProject, sha256Hex, verifyAssets, type LiveryDocument, type UserLayer } from './project'
+import {
+  bytesToBase64,
+  MAX_LAYERS,
+  parseProject,
+  serializeProject,
+  sha256Hex,
+  verifyAssets,
+  type LiveryDocument,
+  type UserLayer
+} from './project'
 
 const TEMPLATE = 'Template_GT3_Ferrari296LMGT3_2025.psd'
 const transform = { x: 10, y: 20, rotation: 15, scaleX: 1, scaleY: -1 }
@@ -15,7 +24,17 @@ const doc: LiveryDocument = {
     { ...base, id: 'a', name: 'Fill 1', kind: 'fill' },
     { ...base, id: 'b', name: 'Rectangle 1', kind: 'rect', width: 400, height: 200, cornerRadius: 8 },
     { ...base, id: 'c', name: 'Polygon 1', kind: 'polygon', points: [0, 0, 100, 0, 50, 80], region: 'option1' },
-    { ...base, id: 'd', name: 'Text 1', kind: 'text', text: '#24', fontFamily: 'Oswald', fontSize: 240, outline: { color: '#000000', width: 12 }, region: 'stickers' }
+    {
+      ...base,
+      id: 'd',
+      name: 'Text 1',
+      kind: 'text',
+      text: '#24',
+      fontFamily: 'Oswald',
+      fontSize: 240,
+      outline: { color: '#000000', width: 12 },
+      region: 'stickers'
+    }
   ],
   assets: {}
 }
@@ -28,7 +47,11 @@ const fileWith = (change: (project: any) => void) => {
 /** Errors as short texts for the assertions: the code, or "path: message" for field errors. */
 const errorsOf = (text: string) => {
   const result = parseProject(text)
-  return result.ok ? [] : result.errors.map((e) => (e.code === 'field' ? `${e.path}: ${e.message}` : e.code === 'newerVersion' ? `newerVersion ${e.version}` : e.code))
+  return result.ok
+    ? []
+    : result.errors.map((e) =>
+        e.code === 'field' ? `${e.path}: ${e.message}` : e.code === 'newerVersion' ? `newerVersion ${e.version}` : e.code
+      )
 }
 
 describe('project files', () => {
@@ -95,8 +118,24 @@ describe('project files', () => {
 describe('image assets', () => {
   const withImage = async (change?: (doc: LiveryDocument) => void) => {
     const id = await sha256Hex(PNG_BYTES)
-    const image: UserLayer = { visible: true, locked: false, opacity: 1, region: 'stickers', transform, id: 'img', name: 'Logo', kind: 'image', assetId: id, width: 300, height: 100 }
-    const d: LiveryDocument = { ...doc, layers: [...doc.layers, image], assets: { [id]: { type: 'image/png', data: bytesToBase64(PNG_BYTES), width: 3, height: 1 } } }
+    const image: UserLayer = {
+      visible: true,
+      locked: false,
+      opacity: 1,
+      region: 'stickers',
+      transform,
+      id: 'img',
+      name: 'Logo',
+      kind: 'image',
+      assetId: id,
+      width: 300,
+      height: 100
+    }
+    const d: LiveryDocument = {
+      ...doc,
+      layers: [...doc.layers, image],
+      assets: { [id]: { type: 'image/png', data: bytesToBase64(PNG_BYTES), width: 3, height: 1 } }
+    }
     change?.(d)
     return { id, d }
   }
@@ -123,7 +162,9 @@ describe('image assets', () => {
       return errorsOf(JSON.stringify(p))
     }
     expect(change((p) => (p.document.assets = {}))).toContain('document.layers[4].assetId: validation.missingAsset')
-    expect(change((p) => (p.document.assets = { 'not-a-hash': p.document.assets[id] })).some((e) => e.includes('validation.assetId'))).toBe(true)
+    expect(change((p) => (p.document.assets = { 'not-a-hash': p.document.assets[id] })).some((e) => e.includes('validation.assetId'))).toBe(
+      true
+    )
     expect(change((p) => (p.document.assets[id].data = 'not base64!'))).toContain(`document.assets.${id}.data: validation.base64`)
     expect(change((p) => (p.document.assets[id].type = 'image/gif')).some((e) => e.startsWith(`document.assets.${id}.type`))).toBe(true)
   })

@@ -9,7 +9,12 @@ export const tgaSize = (width: number, height: number) => TGA_HEADER_BYTES + wid
  * Encodes RGBA pixels (rows from top to bottom) as a 24-bit TGA. Alpha is merged over `background`
  * (default black), because the game files have no alpha channel.
  */
-export function encodeTga24(rgba: Uint8ClampedArray | Uint8Array, width: number, height: number, background: [number, number, number] = [0, 0, 0]): Uint8Array<ArrayBuffer> {
+export function encodeTga24(
+  rgba: Uint8ClampedArray | Uint8Array,
+  width: number,
+  height: number,
+  background: [number, number, number] = [0, 0, 0]
+): Uint8Array<ArrayBuffer> {
   if (rgba.length !== width * height * 4) throw new Error('encodeTga24: pixel data does not match the size')
   const out = new Uint8Array(tgaSize(width, height))
   out[2] = 2 // uncompressed true colour

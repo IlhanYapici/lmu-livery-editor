@@ -39,19 +39,60 @@ export function LayersPanel({ layers, assets, selectedId, select, updateLayer, r
             onDrop={() => dragged && moveLayer(dragged, index)}
             onClick={() => select(layer.id)}
           >
-            <Toggle.Root className={styles.icon} pressed={layer.visible} onPressedChange={(visible) => updateLayer(layer.id, { visible })} aria-label={t('layers.visible')} onClick={(e) => e.stopPropagation()}>
+            <Toggle.Root
+              className={styles.icon}
+              pressed={layer.visible}
+              onPressedChange={(visible) => updateLayer(layer.id, { visible })}
+              aria-label={t('layers.visible')}
+              onClick={(e) => e.stopPropagation()}
+            >
               <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden>
                 <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" strokeWidth="1.6" />
-                {layer.visible ? <circle cx="12" cy="12" r="3" fill="currentColor" /> : <path d="M4 20 20 4" stroke="currentColor" strokeWidth="1.6" />}
+                {layer.visible ? (
+                  <circle cx="12" cy="12" r="3" fill="currentColor" />
+                ) : (
+                  <path d="M4 20 20 4" stroke="currentColor" strokeWidth="1.6" />
+                )}
               </svg>
             </Toggle.Root>
-            <Toggle.Root className={styles.icon} pressed={layer.locked} onPressedChange={(locked) => updateLayer(layer.id, { locked })} aria-label={t('layers.locked')} onClick={(e) => e.stopPropagation()}>
+            <Toggle.Root
+              className={styles.icon}
+              pressed={layer.locked}
+              onPressedChange={(locked) => updateLayer(layer.id, { locked })}
+              aria-label={t('layers.locked')}
+              onClick={(e) => e.stopPropagation()}
+            >
               <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                <rect x="5" y="11" width="14" height="9" fill={layer.locked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.6" />
-                <path d={layer.locked ? 'M8 11V8a4 4 0 0 1 8 0v3' : 'M8 11V8a4 4 0 0 1 7.5-2'} fill="none" stroke="currentColor" strokeWidth="1.6" />
+                <rect
+                  x="5"
+                  y="11"
+                  width="14"
+                  height="9"
+                  fill={layer.locked ? 'currentColor' : 'none'}
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                />
+                <path
+                  d={layer.locked ? 'M8 11V8a4 4 0 0 1 8 0v3' : 'M8 11V8a4 4 0 0 1 7.5-2'}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                />
               </svg>
             </Toggle.Root>
-            <span className={styles.color} style={layer.kind === 'image' && assets[layer.assetId] ? { backgroundImage: `url(${assetUrl(layer.assetId, assets[layer.assetId])})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' } : { background: 'color' in layer ? layer.color : 'transparent' }} />
+            <span
+              className={styles.color}
+              style={
+                layer.kind === 'image' && assets[layer.assetId]
+                  ? {
+                      backgroundImage: `url(${assetUrl(layer.assetId, assets[layer.assetId])})`,
+                      backgroundSize: 'contain',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'center'
+                    }
+                  : { background: 'color' in layer ? layer.color : 'transparent' }
+              }
+            />
             {renaming === layer.id ? (
               <input
                 className={styles.nameInput}
@@ -75,7 +116,9 @@ export function LayersPanel({ layers, assets, selectedId, select, updateLayer, r
             {layer.kind === 'image' && assets[layer.assetId] && isUpscaled(layer, assets[layer.assetId]) && (
               <WarningIcon
                 label={t('properties.upscaled', {
-                  factor: new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(enlargement(layer, assets[layer.assetId]))
+                  factor: new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(
+                    enlargement(layer, assets[layer.assetId])
+                  )
                 })}
               />
             )}
@@ -83,10 +126,20 @@ export function LayersPanel({ layers, assets, selectedId, select, updateLayer, r
               <RegionSelect value={layer.region} onChange={(region) => updateLayer(layer.id, { region })} />
             </span>
             <span className={styles.actions} onClick={(e) => e.stopPropagation()}>
-              <button className={styles.action} onClick={() => moveLayer(layer.id, index + 1)} disabled={index === layers.length - 1} aria-label={t('layers.moveUp')}>
+              <button
+                className={styles.action}
+                onClick={() => moveLayer(layer.id, index + 1)}
+                disabled={index === layers.length - 1}
+                aria-label={t('layers.moveUp')}
+              >
                 ▲
               </button>
-              <button className={styles.action} onClick={() => moveLayer(layer.id, index - 1)} disabled={index === 0} aria-label={t('layers.moveDown')}>
+              <button
+                className={styles.action}
+                onClick={() => moveLayer(layer.id, index - 1)}
+                disabled={index === 0}
+                aria-label={t('layers.moveDown')}
+              >
                 ▼
               </button>
               <button className={styles.action} onClick={() => duplicateLayer(layer.id)} aria-label={t('layers.duplicate')}>

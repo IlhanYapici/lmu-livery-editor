@@ -1,5 +1,14 @@
 import type { RegionId } from '../../../shared/psd/regions'
-import type { FillLayer, ImageLayer, LayerKind, LiveryDocument, PolygonLayer, RectLayer, TextLayer, UserLayer } from '../../../shared/project'
+import type {
+  FillLayer,
+  ImageLayer,
+  LayerKind,
+  LiveryDocument,
+  PolygonLayer,
+  RectLayer,
+  TextLayer,
+  UserLayer
+} from '../../../shared/project'
 import { i18n } from '../i18n'
 
 // Factories for the livery document. The types and the validation are in src/shared/project.ts.

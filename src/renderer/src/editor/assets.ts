@@ -1,4 +1,13 @@
-import { ASSET_TYPES, base64ToBytes, bytesToBase64, MAX_IMAGE_BYTES, MAX_IMAGE_PIXELS, sha256Hex, type Asset, type AssetType } from '../../../shared/project'
+import {
+  ASSET_TYPES,
+  base64ToBytes,
+  bytesToBase64,
+  MAX_IMAGE_BYTES,
+  MAX_IMAGE_PIXELS,
+  sha256Hex,
+  type Asset,
+  type AssetType
+} from '../../../shared/project'
 
 // Imported images (ADR-0025): checks on import, a cache of decoded images, and region shapes.
 // Images are drawn through <img> elements: for SVG, Chromium then runs no script and loads nothing.
@@ -7,7 +16,13 @@ export type ImportedImage = { id: string; asset: Asset }
 
 export type ImportError = 'unsupportedType' | 'tooLarge' | 'tooManyPixels' | 'decodeFailed'
 
-const EXTENSION_TYPES: Record<string, AssetType> = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', svg: 'image/svg+xml' }
+const EXTENSION_TYPES: Record<string, AssetType> = {
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  webp: 'image/webp',
+  svg: 'image/svg+xml'
+}
 
 /** The image type from the File type, else from the file name (Windows sometimes gives no type for SVG). */
 export function imageType(file: { type: string; name: string }): AssetType | null {
@@ -42,7 +57,10 @@ export const UPSCALE_WARNING = 1.5
 
 /** How much a layer enlarges its source image (the larger of the two axes). */
 export function enlargement(layer: { width: number; height: number; transform: { scaleX: number; scaleY: number } }, asset: Asset): number {
-  return Math.max((layer.width * Math.abs(layer.transform.scaleX)) / asset.width, (layer.height * Math.abs(layer.transform.scaleY)) / asset.height)
+  return Math.max(
+    (layer.width * Math.abs(layer.transform.scaleX)) / asset.width,
+    (layer.height * Math.abs(layer.transform.scaleY)) / asset.height
+  )
 }
 
 /** True for a raster image enlarged more than UPSCALE_WARNING times. SVG stays sharp at any size. */
@@ -77,7 +95,8 @@ export async function importImageFile(file: File): Promise<ImportedImage | Impor
   const url = URL.createObjectURL(new Blob([bytes], { type }))
   try {
     const image = await decode(url)
-    const { width, height } = type === 'image/svg+xml' ? svgSize(await file.text()) : { width: image.naturalWidth, height: image.naturalHeight }
+    const { width, height } =
+      type === 'image/svg+xml' ? svgSize(await file.text()) : { width: image.naturalWidth, height: image.naturalHeight }
     if (width > MAX_IMAGE_PIXELS || height > MAX_IMAGE_PIXELS) return 'tooManyPixels'
     if (!objectUrls.has(id)) objectUrls.set(id, url)
     return { id, asset: { type, data: bytesToBase64(bytes), width, height } }

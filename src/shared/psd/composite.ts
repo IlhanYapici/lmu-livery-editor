@@ -186,7 +186,13 @@ function applyEffects(ctx: Context, layer: Layer, raster: Raster): void {
 
 // --- Adjustments ---
 
-export function levelsTable({ shadowInput, highlightInput, shadowOutput, highlightOutput, midtoneInput }: LevelsAdjustmentChannel): Uint8Array {
+export function levelsTable({
+  shadowInput,
+  highlightInput,
+  shadowOutput,
+  highlightOutput,
+  midtoneInput
+}: LevelsAdjustmentChannel): Uint8Array {
   const table = new Uint8Array(256)
   const range = Math.max(1, highlightInput - shadowInput)
   for (let v = 0; v < 256; v++) {
@@ -262,7 +268,10 @@ function hueSaturationTransform(ctx: Context, adjustment: Extract<Layer['adjustm
  * contrast -15; RMS error 2.1 levels). Adding any contrast model made that fit worse, so contrast is
  * not applied and is recorded as unsupported.
  */
-function brightnessContrastTransform(ctx: Context, adjustment: Extract<Layer['adjustment'], { type: 'brightness/contrast' }>): ColorTransform | null {
+function brightnessContrastTransform(
+  ctx: Context,
+  adjustment: Extract<Layer['adjustment'], { type: 'brightness/contrast' }>
+): ColorTransform | null {
   if (adjustment.useLegacy) note(ctx, 'adjustment:brightness/contrast:legacy')
   if (adjustment.contrast) note(ctx, 'adjustment:brightness/contrast:contrast')
   const exponent = 1 + Math.abs(adjustment.brightness ?? 0) / 100
@@ -419,7 +428,13 @@ function drawLayers(ctx: Context, layers: Layer[], dst: Raster): void {
 export function adjustmentTable(layer: Layer): Uint8Array | null {
   const type = layer.adjustment?.type
   if (type !== 'levels' && type !== 'brightness/contrast') return null
-  const ctx: Context = { width: 0, height: 0, decoder: { pixels: () => undefined, mask: () => undefined }, isVisible: () => true, unsupported: new Map() }
+  const ctx: Context = {
+    width: 0,
+    height: 0,
+    decoder: { pixels: () => undefined, mask: () => undefined },
+    isVisible: () => true,
+    unsupported: new Map()
+  }
   const transform = adjustmentTransform(ctx, layer)
   const table = new Uint8Array(256)
   const color = [0, 0, 0]

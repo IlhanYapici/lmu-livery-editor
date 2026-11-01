@@ -1,6 +1,15 @@
 import { createStore } from 'zustand/vanilla'
 import { i18n } from '../i18n'
-import { createLayer, emptyDocument, newId, type Asset, type ImageLayer, type LayerKind, type LiveryDocument, type UserLayer } from './document'
+import {
+  createLayer,
+  emptyDocument,
+  newId,
+  type Asset,
+  type ImageLayer,
+  type LayerKind,
+  type LiveryDocument,
+  type UserLayer
+} from './document'
 
 // The document with an undo history. Each action is one step. A gesture (drag, transform, colour drag)
 // is one step too: beginGesture() keeps the start state, and endGesture() saves it once.
@@ -76,10 +85,14 @@ export function createDocumentStore(templateId: string, initial?: InitialProject
 
       addLayer: (kind, props, index) => {
         const layer = createLayer(kind, get().doc.layers, props)
-        commit((doc) => mapLayers(doc, (layers) => {
-          const at = index ?? layers.length
-          return [...layers.slice(0, at), layer, ...layers.slice(at)]
-        }), layer.id)
+        commit(
+          (doc) =>
+            mapLayers(doc, (layers) => {
+              const at = index ?? layers.length
+              return [...layers.slice(0, at), layer, ...layers.slice(at)]
+            }),
+          layer.id
+        )
         return layer.id
       },
 
@@ -96,10 +109,7 @@ export function createDocumentStore(templateId: string, initial?: InitialProject
         commit((doc) => mapLayers(doc, (layers) => layers.map((l) => (l.id === id ? ({ ...l, ...patch } as UserLayer) : l)))),
 
       removeLayer: (id) =>
-        commit(
-          (doc) => mapLayers(doc, (layers) => layers.filter((l) => l.id !== id)),
-          get().selectedId === id ? null : get().selectedId
-        ),
+        commit((doc) => mapLayers(doc, (layers) => layers.filter((l) => l.id !== id)), get().selectedId === id ? null : get().selectedId),
 
       duplicateLayer: (id) => {
         const layers = get().doc.layers

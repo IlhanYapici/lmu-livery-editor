@@ -6,17 +6,8 @@
     "moduleResolution": "Bundler",
     "strict": true,
     "skipLibCheck": true,
-    "types": [
-      "node"
-    ],
+    "types": ["node"],
     "resolveJsonModule": true
   },
-  "include": [
-    "electron.vite.config.mts",
-    "vitest.config.mts",
-    "scripts/**/*.ts",
-    "src/main/**/*",
-    "src/preload/**/*",
-    "src/shared/**/*"
-  ]
+  "include": ["electron.vite.config.mts", "vitest.config.mts", "scripts/**/*.ts", "src/main/**/*", "src/preload/**/*", "src/shared/**/*"]
 }

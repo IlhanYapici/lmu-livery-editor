@@ -22,10 +22,20 @@ export function TemplatePanel({ content, visibility, insertion, maxInsertion, on
   const userRow = (
     <div key="user" className={styles.userRow}>
       <span className={styles.userName}>{t('template.yourLayers')}</span>
-      <button className={styles.move} onClick={() => onInsertion(insertion + 1)} disabled={insertion >= maxInsertion} aria-label={t('template.moveUp')}>
+      <button
+        className={styles.move}
+        onClick={() => onInsertion(insertion + 1)}
+        disabled={insertion >= maxInsertion}
+        aria-label={t('template.moveUp')}
+      >
         ▲
       </button>
-      <button className={styles.move} onClick={() => onInsertion(insertion - 1)} disabled={insertion <= 1} aria-label={t('template.moveDown')}>
+      <button
+        className={styles.move}
+        onClick={() => onInsertion(insertion - 1)}
+        disabled={insertion <= 1}
+        aria-label={t('template.moveDown')}
+      >
         ▼
       </button>
     </div>
@@ -46,13 +56,28 @@ export function TemplatePanel({ content, visibility, insertion, maxInsertion, on
   )
 }
 
-function NodeRow({ node, depth, isVisible, onVisible }: { node: TemplateNode; depth: number; isVisible: (n: TemplateNode) => boolean; onVisible: (path: string, visible: boolean) => void }) {
+function NodeRow({
+  node,
+  depth,
+  isVisible,
+  onVisible
+}: {
+  node: TemplateNode
+  depth: number
+  isVisible: (n: TemplateNode) => boolean
+  onVisible: (path: string, visible: boolean) => void
+}) {
   const { t } = useTranslation()
   const visible = isVisible(node)
   return (
     <>
       <div className={styles.row} style={{ paddingLeft: 8 + depth * 20 }}>
-        <Toggle.Root className={styles.eye} pressed={visible} onPressedChange={(on) => onVisible(node.path, on)} aria-label={t('template.show', { name: node.name })}>
+        <Toggle.Root
+          className={styles.eye}
+          pressed={visible}
+          onPressedChange={(on) => onVisible(node.path, on)}
+          aria-label={t('template.show', { name: node.name })}
+        >
           <EyeIcon open={visible} />
         </Toggle.Root>
         <span className={visible ? styles.name : `${styles.name} ${styles.hidden}`}>{node.name}</span>

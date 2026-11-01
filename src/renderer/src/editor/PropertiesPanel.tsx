@@ -44,7 +44,11 @@ export function PropertiesPanel({ layer, table, asset, updateLayer, beginGesture
             </label>
             <div className={styles.swatches}>
               <span className={styles.swatch} style={{ background: layer.color }} title={t('properties.yourColour')} />
-              <span className={styles.swatch} style={{ background: table ? gameColor(layer.color, table) : layer.color }} title={t('properties.gameColour')} />
+              <span
+                className={styles.swatch}
+                style={{ background: table ? gameColor(layer.color, table) : layer.color }}
+                title={t('properties.gameColour')}
+              />
             </div>
             <span className={styles.note}>{t('properties.colourNote')}</span>
           </div>
@@ -74,13 +78,28 @@ export function PropertiesPanel({ layer, table, asset, updateLayer, beginGesture
           <NumberField label="X" value={layer.transform.x} onCommit={(x) => transform({ x })} />
           <NumberField label="Y" value={layer.transform.y} onCommit={(y) => transform({ y })} />
           <NumberField label={t('properties.rotation')} value={layer.transform.rotation} onCommit={(rotation) => transform({ rotation })} />
-          <NumberField label={t('properties.scaleX')} value={layer.transform.scaleX} step={0.01} onCommit={(scaleX) => transform({ scaleX })} />
-          <NumberField label={t('properties.scaleY')} value={layer.transform.scaleY} step={0.01} onCommit={(scaleY) => transform({ scaleY })} />
+          <NumberField
+            label={t('properties.scaleX')}
+            value={layer.transform.scaleX}
+            step={0.01}
+            onCommit={(scaleX) => transform({ scaleX })}
+          />
+          <NumberField
+            label={t('properties.scaleY')}
+            value={layer.transform.scaleY}
+            step={0.01}
+            onCommit={(scaleY) => transform({ scaleY })}
+          />
           {layer.kind === 'rect' && (
             <>
               <NumberField label={t('properties.width')} value={layer.width} min={1} onCommit={(width) => update({ width })} />
               <NumberField label={t('properties.height')} value={layer.height} min={1} onCommit={(height) => update({ height })} />
-              <NumberField label={t('properties.cornerRadius')} value={layer.cornerRadius} min={0} onCommit={(cornerRadius) => update({ cornerRadius })} />
+              <NumberField
+                label={t('properties.cornerRadius')}
+                value={layer.cornerRadius}
+                min={0}
+                onCommit={(cornerRadius) => update({ cornerRadius })}
+              />
             </>
           )}
         </div>
@@ -105,7 +124,10 @@ export function PropertiesPanel({ layer, table, asset, updateLayer, beginGesture
           <div className={styles.grid}>
             <label className={styles.label}>
               {t('properties.font')}
-              <Select.Root value={layer.fontFamily} onValueChange={(fontFamily) => update({ fontFamily: fontFamily as (typeof FONTS)[number] })}>
+              <Select.Root
+                value={layer.fontFamily}
+                onValueChange={(fontFamily) => update({ fontFamily: fontFamily as (typeof FONTS)[number] })}
+              >
                 <Select.Trigger className={styles.input}>
                   <Select.Value />
                 </Select.Trigger>
@@ -135,9 +157,19 @@ export function PropertiesPanel({ layer, table, asset, updateLayer, beginGesture
               <>
                 <label className={styles.label}>
                   {t('properties.outlineColour')}
-                  <HexColorInput className={styles.input} color={layer.outline.color} onChange={(color) => update({ outline: { ...layer.outline!, color } })} prefixed />
+                  <HexColorInput
+                    className={styles.input}
+                    color={layer.outline.color}
+                    onChange={(color) => update({ outline: { ...layer.outline!, color } })}
+                    prefixed
+                  />
                 </label>
-                <NumberField label={t('properties.outlineWidth')} value={layer.outline.width} min={0} onCommit={(width) => update({ outline: { ...layer.outline!, width } })} />
+                <NumberField
+                  label={t('properties.outlineWidth')}
+                  value={layer.outline.width}
+                  min={0}
+                  onCommit={(width) => update({ outline: { ...layer.outline!, width } })}
+                />
               </>
             )}
           </div>
@@ -150,7 +182,9 @@ export function PropertiesPanel({ layer, table, asset, updateLayer, beginGesture
 /** Source size, and a warning when a raster image is enlarged so much that it looks blurred in game. */
 function ImageInfo({ layer, asset }: { layer: Extract<UserLayer, { kind: 'image' }>; asset: Asset }) {
   const { t } = useTranslation()
-  const text = t('properties.upscaled', { factor: new Intl.NumberFormat(document.documentElement.lang || 'en', { maximumFractionDigits: 1 }).format(enlargement(layer, asset)) })
+  const text = t('properties.upscaled', {
+    factor: new Intl.NumberFormat(document.documentElement.lang || 'en', { maximumFractionDigits: 1 }).format(enlargement(layer, asset))
+  })
   return (
     <>
       <span className={styles.note}>{t('properties.source', { width: asset.width, height: asset.height })}</span>
@@ -165,7 +199,19 @@ function ImageInfo({ layer, asset }: { layer: Extract<UserLayer, { kind: 'image'
 }
 
 /** A number field that commits on Enter or when it loses focus, so typing makes one history step. */
-function NumberField({ label, value, onCommit, step = 1, min }: { label: string; value: number; onCommit: (v: number) => void; step?: number; min?: number }) {
+function NumberField({
+  label,
+  value,
+  onCommit,
+  step = 1,
+  min
+}: {
+  label: string
+  value: number
+  onCommit: (v: number) => void
+  step?: number
+  min?: number
+}) {
   const [text, setText] = useState(format(value))
   // When the value changes from outside (undo, a drag on the canvas), show it. React's "previous value" pattern.
   const [shown, setShown] = useState(value)
@@ -201,7 +247,15 @@ function TextField({ value, onCommit }: { value: string; onCommit: (v: string) =
     setShown(value)
     setText(value)
   }
-  return <input className={styles.input} value={text} onChange={(e) => setText(e.target.value)} onBlur={() => text !== value && onCommit(text)} onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()} />
+  return (
+    <input
+      className={styles.input}
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={() => text !== value && onCommit(text)}
+      onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+    />
+  )
 }
 
 const format = (v: number) => String(Math.round(v * 100) / 100)

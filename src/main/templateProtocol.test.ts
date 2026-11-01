@@ -11,7 +11,14 @@ const catalogue: Catalogue = [
       {
         id: 'GT3:McLaren720EVO',
         name: 'McLaren 720S EVO',
-        variants: [{ id: 'Template_GT3_McLaren720EVO_2025 _ELMS.psd', label: '2025 ELMS', path: 'E:\\T\\Template_GT3_McLaren720EVO_2025 _ELMS.psd', sizeBytes: 1 }]
+        variants: [
+          {
+            id: 'Template_GT3_McLaren720EVO_2025 _ELMS.psd',
+            label: '2025 ELMS',
+            path: 'E:\\T\\Template_GT3_McLaren720EVO_2025 _ELMS.psd',
+            sizeBytes: 1
+          }
+        ]
       }
     ]
   }

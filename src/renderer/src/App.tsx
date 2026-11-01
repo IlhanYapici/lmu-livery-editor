@@ -74,11 +74,17 @@ export function App() {
     if (result.status === 'error') return setMessage({ title: t('project.cannotOpen'), lines: [result.message] })
     const parsed = parseProject(result.text)
     if (!parsed.ok)
-      return setMessage({ title: t('project.cannotOpen'), lines: [t('project.invalid', { file: result.fileName }), ...parsed.errors.slice(0, 8).map(projectErrorText)] })
+      return setMessage({
+        title: t('project.cannotOpen'),
+        lines: [t('project.invalid', { file: result.fileName }), ...parsed.errors.slice(0, 8).map(projectErrorText)]
+      })
 
     const assetErrors = await verifyAssets(parsed.project.document)
     if (assetErrors.length)
-      return setMessage({ title: t('project.cannotOpen'), lines: [t('project.invalid', { file: result.fileName }), ...assetErrors.slice(0, 8).map(projectErrorText)] })
+      return setMessage({
+        title: t('project.cannotOpen'),
+        lines: [t('project.invalid', { file: result.fileName }), ...assetErrors.slice(0, 8).map(projectErrorText)]
+      })
 
     const { template, document } = parsed.project
     for (const category of catalogue)
@@ -122,7 +128,9 @@ export function App() {
   }
 
   if (location?.status !== 'found') {
-    return <LocateScreen location={location?.status === 'not-found' || location?.status === 'invalid' ? location : null} onChoose={choose} />
+    return (
+      <LocateScreen location={location?.status === 'not-found' || location?.status === 'invalid' ? location : null} onChoose={choose} />
+    )
   }
 
   const right = (
@@ -165,7 +173,11 @@ export function App() {
       >
         <p>{t('project.unsavedText')}</p>
       </ConfirmDialog>
-      <ConfirmDialog open={message !== null} title={message?.title ?? ''} actions={[{ label: t('app.ok'), primary: true, onSelect: () => setMessage(null) }]}>
+      <ConfirmDialog
+        open={message !== null}
+        title={message?.title ?? ''}
+        actions={[{ label: t('app.ok'), primary: true, onSelect: () => setMessage(null) }]}
+      >
         {message && message.lines.length > 1 ? (
           <>
             <p>{message.lines[0]}</p>
@@ -210,7 +222,12 @@ export function App() {
       {catalogue === null && <p className={styles.message}>{t('select.readingTemplates')}</p>}
       {catalogue?.length === 0 && <p className={styles.message}>{t('select.noTemplates')}</p>}
       {catalogue && catalogue.length > 0 && selection && (
-        <SelectScreen catalogue={catalogue} selection={selection} onSelect={setSelection} onContinue={() => setEditing({ key: Date.now(), project: null, templateChanged: false })} />
+        <SelectScreen
+          catalogue={catalogue}
+          selection={selection}
+          onSelect={setSelection}
+          onContinue={() => setEditing({ key: Date.now(), project: null, templateChanged: false })}
+        />
       )}
       {dialogs}
     </div>

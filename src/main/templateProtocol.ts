@@ -15,7 +15,6 @@ export function resolveTemplateUrl(url: string, catalogue: Catalogue): string | 
   if (parsed.protocol !== `${TEMPLATE_PROTOCOL}:` || parsed.hostname !== 'template') return null
   const name = decodeURIComponent(parsed.pathname.replace(/^\//, ''))
   for (const category of catalogue)
-    for (const car of category.cars)
-      for (const variant of car.variants) if (variant.id === name) return variant.path
+    for (const car of category.cars) for (const variant of car.variants) if (variant.id === name) return variant.path
   return null
 }

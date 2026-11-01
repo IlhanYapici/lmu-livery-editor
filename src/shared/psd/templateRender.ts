@@ -130,8 +130,7 @@ export function renderSegments(
   const belowResult = compositeLayers(below, { width, height, decoder, isVisible })
   const aboveResult = compositeLayers(aboveContent, { width, height, decoder, isVisible })
   const unsupported: Record<string, number> = {}
-  for (const map of [belowResult.unsupported, aboveResult.unsupported])
-    for (const [k, v] of map) unsupported[k] = (unsupported[k] ?? 0) + v
+  for (const map of [belowResult.unsupported, aboveResult.unsupported]) for (const [k, v] of map) unsupported[k] = (unsupported[k] ?? 0) + v
 
   return { below: belowResult.image, above: aboveResult.image, table, fastIsExact, unsupported }
 }
@@ -140,9 +139,7 @@ export function renderSegments(
 export function renderGuides(psd: Psd, structure: TemplateStructure, decoder: LayerDecoder): Guides {
   const { width, height } = psd
   const plain = (layer: Layer | undefined) =>
-    layer
-      ? compositeLayers([{ ...layer, hidden: false, blendMode: 'normal', opacity: 1 }], { width, height, decoder }).image
-      : null
+    layer ? compositeLayers([{ ...layer, hidden: false, blendMode: 'normal', opacity: 1 }], { width, height, decoder }).image : null
   return {
     wireframe: plain(structure.wireframe),
     mask: plain(structure.mask),
@@ -162,7 +159,13 @@ export function renderExact(
   decoder: LayerDecoder
 ): Raster {
   const paths = layerPaths(psd.children ?? [])
-  const userLayer: Layer = { name: 'User layers', left: user.left, top: user.top, right: user.left + user.width, bottom: user.top + user.height }
+  const userLayer: Layer = {
+    name: 'User layers',
+    left: user.left,
+    top: user.top,
+    right: user.left + user.width,
+    bottom: user.top + user.height
+  }
   const content = [...structure.content.slice(0, options.insertion), userLayer, ...structure.content.slice(options.insertion)]
   const withUser: LayerDecoder = {
     pixels: (l) => (l === userLayer ? { width: user.width, height: user.height, data: user.data } : decoder.pixels(l)),

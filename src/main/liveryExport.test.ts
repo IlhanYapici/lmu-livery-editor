@@ -12,7 +12,8 @@ describe('checkGameTga', () => {
     expect(checkGameTga(tga(255), 'skin')).toBeNull()
     expect(checkGameTga(new Uint8Array(10), 'skin')).toMatch(/^skin:/)
     expect(checkGameTga(new Uint8Array([...tga(1), 0]), 'skin')).toMatch(/length/)
-    const thirtyTwo = tga(1).slice(); thirtyTwo[16] = 32
+    const thirtyTwo = tga(1).slice()
+    thirtyTwo[16] = 32
     expect(checkGameTga(thirtyTwo, 'region')).toMatch(/^region:/)
   })
 })

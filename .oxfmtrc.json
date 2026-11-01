@@ -6,5 +6,5 @@
   "printWidth": 140,
   "trailingComma": "none",
   "arrowParens": "always",
-  "ignorePatterns": ["out/**", "dist/**", "node_modules/**", "package-lock.json", "*.psd", "*.tga"]
+  "ignorePatterns": ["out/**", "dist/**", "node_modules/**", "package-lock.json", "*.psd", "*.tga", "README.md"]
 }

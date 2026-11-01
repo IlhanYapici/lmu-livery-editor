@@ -53,7 +53,8 @@ export async function writeLiveryFiles(
       await mkdir(backupFolder, { recursive: true })
       for (const name of existing) await rename(join(folder, name), join(backupFolder, name))
       const all = (await readdir(backups)).sort()
-      for (const old of all.slice(0, Math.max(0, all.length - BACKUPS_TO_KEEP))) await rm(join(backups, old), { recursive: true, force: true })
+      for (const old of all.slice(0, Math.max(0, all.length - BACKUPS_TO_KEEP)))
+        await rm(join(backups, old), { recursive: true, force: true })
     }
   }
   await writeAtomic(join(folder, SKIN_FILE), skin)

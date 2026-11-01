@@ -24,7 +24,10 @@ const decoder: LayerDecoder = {
 
 const levels = (out: [number, number], extra: Partial<Layer> = {}): Layer => ({
   name: 'Levels 1',
-  adjustment: { type: 'levels', channels: [{ shadowInput: 0, highlightInput: 255, shadowOutput: out[0], highlightOutput: out[1], midtoneInput: 1 }] },
+  adjustment: {
+    type: 'levels',
+    channels: [{ shadowInput: 0, highlightInput: 255, shadowOutput: out[0], highlightOutput: out[1], midtoneInput: 1 }]
+  },
   mask: { left: 0, top: 0, right: 0, bottom: 0, defaultColor: 255 },
   ...extra
 })
@@ -37,7 +40,13 @@ function ferrari(extraAbove: Layer[] = []): Psd {
     children: [
       solid('base', [200, 200, 200, 255]),
       { name: 'carbon', children: [solid('Shape 502', [20, 20, 20, 255])], hidden: true },
-      { name: 'Number Plates', children: [{ name: 'WEC', children: [solid('plate', [255, 255, 255, 255])] }, { name: 'LM', children: [], hidden: true }] },
+      {
+        name: 'Number Plates',
+        children: [
+          { name: 'WEC', children: [solid('plate', [255, 255, 255, 255])] },
+          { name: 'LM', children: [], hidden: true }
+        ]
+      },
       ...extraAbove,
       levels([10, 225]),
       solid('Mask(Disable for export)', [0, 0, 0, 255]),
@@ -51,7 +60,12 @@ describe('outlineTemplate', () => {
   it('lists content layers with index paths and sub-groups, and puts the user layers above carbon', () => {
     const psd = ferrari()
     const outline = outlineTemplate(psd, classifyTemplate(psd))
-    expect(outline.content.map((n) => `${n.path}:${n.name}:${n.kind}`)).toEqual(['0:base:layer', '1:carbon:group', '2:Number Plates:group', '3:Levels 1:adjustment'])
+    expect(outline.content.map((n) => `${n.path}:${n.name}:${n.kind}`)).toEqual([
+      '0:base:layer',
+      '1:carbon:group',
+      '2:Number Plates:group',
+      '3:Levels 1:adjustment'
+    ])
     expect(outline.content[2].children.map((c) => `${c.path}:${c.name}:${c.hidden}`)).toEqual(['2/0:WEC:false', '2/1:LM:true'])
     expect(outline.defaultInsertion).toBe(2)
     expect(outline.maxInsertion).toBe(3)
@@ -76,7 +90,10 @@ describe('renderSegments', () => {
   })
 
   it('is not exact when a Hue/Saturation group sits above the user layers (the "Clamp" group)', () => {
-    const clamp: Layer = { name: 'Clamp', children: [{ name: 'Hue/Saturation 1', adjustment: { type: 'hue/saturation', master: { hue: 0, saturation: -10, lightness: 0 } } }] }
+    const clamp: Layer = {
+      name: 'Clamp',
+      children: [{ name: 'Hue/Saturation 1', adjustment: { type: 'hue/saturation', master: { hue: 0, saturation: -10, lightness: 0 } } }]
+    }
     const psd = ferrari([clamp])
     expect(renderSegments(psd, classifyTemplate(psd), { insertion: 2, visibility: {} }, decoder).fastIsExact).toBe(false)
   })
@@ -120,13 +137,17 @@ describe('renderExact', () => {
     expect(seg.fastIsExact).toBe(true)
     // Fast: below, then user (normal blend), then above, then the table.
     const fast = (i: number) => {
-      const b = seg.below.data, a = seg.above.data, u = user.data
-      const ua = u[i + 3] / 255, aa = a[i + 3] / 255
+      const b = seg.below.data,
+        a = seg.above.data,
+        u = user.data
+      const ua = u[i + 3] / 255,
+        aa = a[i + 3] / 255
       return [0, 1, 2].map((c) => {
         const v = b[c + i] * (1 - ua) + u[c + i] * ua
         return seg.table[Math.round(v * (1 - aa) + a[c + i] * aa)]
       })
     }
-    for (const i of [0, 4]) expect(Array.from(exact.data.slice(i, i + 3)).map((v, c) => Math.abs(v - fast(i)[c]) <= 1)).toEqual([true, true, true])
+    for (const i of [0, 4])
+      expect(Array.from(exact.data.slice(i, i + 3)).map((v, c) => Math.abs(v - fast(i)[c]) <= 1)).toEqual([true, true, true])
   })
 })

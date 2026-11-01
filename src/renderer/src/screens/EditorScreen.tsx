@@ -65,7 +65,17 @@ export function EditorScreen(props: Props) {
   return stores ? <EditorBody {...props} templateStore={stores.template} documentStore={stores.document} /> : null
 }
 
-function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle, onError, templateStore, documentStore }: Props & { templateStore: TemplateStore; documentStore: DocumentStore }) {
+function EditorBody({
+  category,
+  car,
+  variant,
+  templateChanged,
+  guardRef,
+  onTitle,
+  onError,
+  templateStore,
+  documentStore
+}: Props & { templateStore: TemplateStore; documentStore: DocumentStore }) {
   const { t } = useTranslation()
   const template = useStore(templateStore)
   const d = useStore(documentStore)
@@ -109,7 +119,11 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
   const save = useCallback(
     async (asNew: boolean) => {
       const { doc, handle, markSaved } = documentStore.getState()
-      const result = await window.lmu.saveProject(serializeProject(doc, variant.sizeBytes), asNew ? null : handle, `${car.name} ${variant.label}`)
+      const result = await window.lmu.saveProject(
+        serializeProject(doc, variant.sizeBytes),
+        asNew ? null : handle,
+        `${car.name} ${variant.label}`
+      )
       if (result.status === 'saved') markSaved(doc, result.handle, result.fileName)
       if (result.status === 'error') onError([result.message])
       return result.status === 'saved'
@@ -149,10 +163,16 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
     const { width, height } = template.outline
     const { doc } = documentStore.getState()
     try {
-      const [user, userRegions] = await Promise.all([rasterizeSkin(doc.layers, doc.assets, width, height), rasterizeRegions(doc.layers, doc.assets, width, height)])
+      const [user, userRegions] = await Promise.all([
+        rasterizeSkin(doc.layers, doc.assets, width, height),
+        rasterizeRegions(doc.layers, doc.assets, width, height)
+      ])
       const files = await template.exportFiles(user, userRegions, insertion, doc.templateVisibility)
       setWriting(true)
-      const result = target === 'game' ? await window.lmu.exportToGame(files.skin, files.region) : await window.lmu.exportToFolder(files.skin, files.region)
+      const result =
+        target === 'game'
+          ? await window.lmu.exportToGame(files.skin, files.region)
+          : await window.lmu.exportToFolder(files.skin, files.region)
       setWriting(false)
       if (result.status === 'cancelled') return
       if (result.status === 'error') return setReport({ title: t('export.failedTitle'), lines: [result.message] })
@@ -291,7 +311,9 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
             if (files.length) void importImages(files)
           }}
         />
-        {template.status === 'ready' && <Toolbar tool={tool} onTool={setTool} onAddFill={addFill} onAddImage={() => fileInput.current?.click()} />}
+        {template.status === 'ready' && (
+          <Toolbar tool={tool} onTool={setTool} onAddFill={addFill} onAddImage={() => fileInput.current?.click()} />
+        )}
         {template.status !== 'ready' && (
           <div className={styles.overlay}>
             {template.status === 'error' ? (
@@ -300,7 +322,10 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
               <>
                 <p>{t(`editor.stage.${template.stage ?? 'loading'}`)}…</p>
                 <div className={styles.progress}>
-                  <div className={template.fraction === null ? styles.progressBusy : styles.progressBar} style={{ width: template.fraction === null ? undefined : `${template.fraction * 100}%` }} />
+                  <div
+                    className={template.fraction === null ? styles.progressBusy : styles.progressBar}
+                    style={{ width: template.fraction === null ? undefined : `${template.fraction * 100}%` }}
+                  />
                 </div>
               </>
             )}
@@ -325,14 +350,30 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
         )}
         {template.status === 'ready' && (
           <div className={styles.status}>
-            {t('editor.status', { load: seconds(template.timings.loadMs), draw: seconds(template.timings.segmentsMs), preview: previewText })}
+            {t('editor.status', {
+              load: seconds(template.timings.loadMs),
+              draw: seconds(template.timings.segmentsMs),
+              preview: previewText
+            })}
           </div>
         )}
         <div className={styles.canvasTools}>
-          <button className={styles.toolButton} onClick={d.undo} disabled={!d.past.length} aria-label={t('editor.undo')} title={t('editor.undo')}>
+          <button
+            className={styles.toolButton}
+            onClick={d.undo}
+            disabled={!d.past.length}
+            aria-label={t('editor.undo')}
+            title={t('editor.undo')}
+          >
             ↶
           </button>
-          <button className={styles.toolButton} onClick={d.redo} disabled={!d.future.length} aria-label={t('editor.redo')} title={t('editor.redo')}>
+          <button
+            className={styles.toolButton}
+            onClick={d.redo}
+            disabled={!d.future.length}
+            aria-label={t('editor.redo')}
+            title={t('editor.redo')}
+          >
             ↷
           </button>
           <span>{Math.round(zoom * 100)} %</span>
@@ -401,7 +442,13 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
 
       <footer className={styles.bottom}>
         <span className={styles.bottomLabel}>{t('editor.view')}</span>
-        <ToggleGroup.Root type="single" className={styles.segmented} value={view} onValueChange={(v) => v && setView(v as CanvasView)} aria-label={t('editor.view')}>
+        <ToggleGroup.Root
+          type="single"
+          className={styles.segmented}
+          value={view}
+          onValueChange={(v) => v && setView(v as CanvasView)}
+          aria-label={t('editor.view')}
+        >
           <ToggleGroup.Item className={styles.segment} value="livery">
             {t('editor.viewLivery')}
           </ToggleGroup.Item>
@@ -410,7 +457,11 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
           </ToggleGroup.Item>
         </ToggleGroup.Root>
         <span className={styles.bottomLabel}>{t('editor.guides')}</span>
-        <Toggle.Root className={styles.chip} pressed={guides.wireframe} onPressedChange={(wireframe) => setGuides({ ...guides, wireframe })}>
+        <Toggle.Root
+          className={styles.chip}
+          pressed={guides.wireframe}
+          onPressedChange={(wireframe) => setGuides({ ...guides, wireframe })}
+        >
           {t('editor.wireframe')}
         </Toggle.Root>
         <Toggle.Root className={styles.chip} pressed={guides.mask} onPressedChange={(mask) => setGuides({ ...guides, mask })}>
@@ -423,10 +474,19 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
         <Button onClick={() => save(true)} title={t('editor.saveAsHint')}>
           {t('editor.saveAs')}
         </Button>
-        <Button onClick={() => runExport('folder')} disabled={template.status !== 'ready' || template.exporting || writing} title={t('editor.exportToFolderHint')}>
+        <Button
+          onClick={() => runExport('folder')}
+          disabled={template.status !== 'ready' || template.exporting || writing}
+          title={t('editor.exportToFolderHint')}
+        >
           {t('editor.exportToFolder')}
         </Button>
-        <Button variant="primary" size="large" onClick={() => setConfirmGameExport(true)} disabled={template.status !== 'ready' || template.exporting || writing}>
+        <Button
+          variant="primary"
+          size="large"
+          onClick={() => setConfirmGameExport(true)}
+          disabled={template.status !== 'ready' || template.exporting || writing}
+        >
           {t('editor.export')}
         </Button>
       </footer>
@@ -448,7 +508,11 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
       >
         <p>{t('export.confirmText', { slot: 'UserData\\Liveries', backups: 'UserData\\Liveries\\Backups' })}</p>
       </ConfirmDialog>
-      <ConfirmDialog open={report !== null} title={report?.title ?? ''} actions={[{ label: t('app.ok'), primary: true, onSelect: () => setReport(null) }]}>
+      <ConfirmDialog
+        open={report !== null}
+        title={report?.title ?? ''}
+        actions={[{ label: t('app.ok'), primary: true, onSelect: () => setReport(null) }]}
+      >
         {report?.lines.map((line) => (
           <p key={line}>{line}</p>
         ))}

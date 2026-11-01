@@ -65,16 +65,12 @@ const REAL_NAMES = [
   'Template_LMP3_Ligier_JSP325.psd'
 ]
 
-const catalogueOf = (names: string[]) =>
-  buildCatalogue(names.map((name) => ({ name, path: `X:\\LiveryTemplates\\${name}`, sizeBytes: 1 })))
+const catalogueOf = (names: string[]) => buildCatalogue(names.map((name) => ({ name, path: `X:\\LiveryTemplates\\${name}`, sizeBytes: 1 })))
 
 /** Compact view: { category: { car: [variant labels] } }. */
 const summary = (names: string[]) =>
   Object.fromEntries(
-    catalogueOf(names).map((cat) => [
-      cat.name,
-      Object.fromEntries(cat.cars.map((car) => [car.name, car.variants.map((v) => v.label)]))
-    ])
+    catalogueOf(names).map((cat) => [cat.name, Object.fromEntries(cat.cars.map((car) => [car.name, car.variants.map((v) => v.label)]))])
   )
 
 describe('parseTemplateName', () => {

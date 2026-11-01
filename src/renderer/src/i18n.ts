@@ -12,7 +12,8 @@ export async function applyLanguage(language: Language, save: boolean): Promise<
   if (save) await window.lmu.setLanguage(language)
 }
 
-const numberFormat = (digits: number) => new Intl.NumberFormat(i18n.language, { minimumFractionDigits: digits, maximumFractionDigits: digits })
+const numberFormat = (digits: number) =>
+  new Intl.NumberFormat(i18n.language, { minimumFractionDigits: digits, maximumFractionDigits: digits })
 
 /** "3.7 s" / "3,7 s" */
 export const formatSeconds = (ms: number) => i18n.t('units.seconds', { value: numberFormat(1).format(ms / 1000) })

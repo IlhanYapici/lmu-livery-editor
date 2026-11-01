@@ -35,9 +35,11 @@ describe('readTgaHeader', () => {
   it('refuses compressed, colour-mapped, short or odd-depth files', () => {
     const good = encodeTga24(new Uint8ClampedArray(16), 2, 2)
     expect(readTgaHeader(good)).toEqual({ width: 2, height: 2, bitsPerPixel: 24, topOrigin: false })
-    const rle = good.slice(); rle[2] = 10
+    const rle = good.slice()
+    rle[2] = 10
     expect(() => readTgaHeader(rle)).toThrow(/uncompressed/)
-    const depth = good.slice(); depth[16] = 16
+    const depth = good.slice()
+    depth[16] = 16
     expect(() => readTgaHeader(depth)).toThrow(/depth/)
     expect(() => readTgaHeader(good.slice(0, 20))).toThrow(/shorter/)
   })

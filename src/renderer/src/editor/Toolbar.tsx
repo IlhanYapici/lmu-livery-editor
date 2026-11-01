@@ -18,7 +18,14 @@ export function Toolbar({ tool, onTool, onAddFill, onAddImage }: Props) {
   return (
     <Tooltip.Provider delayDuration={300}>
       <div className={styles.bar}>
-        <ToggleGroup.Root type="single" value={tool} onValueChange={(v) => v && onTool(v as Tool)} className={styles.group} aria-label={t('tools.label')} orientation="vertical">
+        <ToggleGroup.Root
+          type="single"
+          value={tool}
+          onValueChange={(v) => v && onTool(v as Tool)}
+          className={styles.group}
+          aria-label={t('tools.label')}
+          orientation="vertical"
+        >
           {TOOLS.map((item) => (
             <Tip key={item.tool} text={`${t(`tools.${item.tool}`)} · ${item.key}`}>
               <ToggleGroup.Item value={item.tool} className={styles.button} aria-label={t(`tools.${item.tool}`)}>

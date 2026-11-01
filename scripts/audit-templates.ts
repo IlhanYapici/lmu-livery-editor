@@ -118,7 +118,12 @@ function auditFile(file: string, options: { compare: boolean; dumpDir?: string }
     features: Object.fromEntries(scanFeatures(psd.children ?? [])),
     adjustments: allLayers(psd.children ?? [])
       .filter(({ layer }) => layer.adjustment)
-      .map(({ layer, path }) => ({ path: [...path, layer.name].join(' / '), hidden: !!layer.hidden, opacity: layer.opacity, adjustment: layer.adjustment })),
+      .map(({ layer, path }) => ({
+        path: [...path, layer.name].join(' / '),
+        hidden: !!layer.hidden,
+        opacity: layer.opacity,
+        adjustment: layer.adjustment
+      })),
     topLayers: (psd.children ?? []).map((l) => ({
       name: l.name,
       group: !!l.children,
@@ -182,7 +187,9 @@ function main() {
       results.push(r)
       const c = r.compare as Diff | string | undefined
       const cmp = typeof c === 'object' ? `diff mean=${c.meanAbs} >16=${(c.over16 * 100).toFixed(2)}%` : (c ?? '')
-      console.log(`${String(r.file).padEnd(50)} ${String(r.seconds).padStart(5)}s ${cmp} base=${r.base} mask=${r.mask} wire=${r.wireframe} ${(r.warnings as string[]).join('; ')}`)
+      console.log(
+        `${String(r.file).padEnd(50)} ${String(r.seconds).padStart(5)}s ${cmp} base=${r.base} mask=${r.mask} wire=${r.wireframe} ${(r.warnings as string[]).join('; ')}`
+      )
     } catch (e) {
       results.push({ file: basename(file), error: (e as Error).message })
       console.log(`${basename(file).padEnd(50)} ERROR ${(e as Error).message}`)

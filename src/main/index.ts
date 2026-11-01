@@ -2,7 +2,15 @@ import { app, BrowserWindow, dialog, ipcMain, net, protocol } from 'electron'
 import { stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { IPC, TEMPLATE_PROTOCOL, type Catalogue, type ExportResult, type GameLocation, type OpenProjectResult, type SaveProjectResult } from '../shared/api'
+import {
+  IPC,
+  TEMPLATE_PROTOCOL,
+  type Catalogue,
+  type ExportResult,
+  type GameLocation,
+  type OpenProjectResult,
+  type SaveProjectResult
+} from '../shared/api'
 import { checkGameTga, liveryFilesExist, writeLiveryFiles } from './liveryExport'
 import { createI18n, isLanguage, languageForLocale, type Language } from '../shared/i18n'
 import { PROJECT_EXTENSION } from '../shared/project'
@@ -92,20 +100,31 @@ const projectFilters = () => [{ name: t('dialogs.projectFilter'), extensions: [P
 const projectFolder = () => ensureFolder(join(app.getPath('documents'), 'LMU Liveries'))
 
 async function openProject(window: BrowserWindow | null): Promise<OpenProjectResult> {
-  const options: Electron.OpenDialogOptions = { title: t('dialogs.openProject'), defaultPath: await projectFolder(), filters: projectFilters(), properties: ['openFile'] }
+  const options: Electron.OpenDialogOptions = {
+    title: t('dialogs.openProject'),
+    defaultPath: await projectFolder(),
+    filters: projectFilters(),
+    properties: ['openFile']
+  }
   const result = window ? await dialog.showOpenDialog(window, options) : await dialog.showOpenDialog(options)
   if (result.canceled || result.filePaths.length === 0) return { status: 'cancelled' }
   const path = result.filePaths[0]
   try {
     const read = await readProjectFile(path)
-    if (!read.ok) return { status: 'error', message: t('errors.fileTooLarge', { size: read.tooLarge.sizeMB, limit: read.tooLarge.limitMB }) }
+    if (!read.ok)
+      return { status: 'error', message: t('errors.fileTooLarge', { size: read.tooLarge.sizeMB, limit: read.tooLarge.limitMB }) }
     return { status: 'opened', handle: projects.register(path), fileName: displayName(path), text: read.text }
   } catch (error) {
     return { status: 'error', message: t('errors.cannotRead', { error: (error as Error).message }) }
   }
 }
 
-async function saveProject(window: BrowserWindow | null, text: string, handle: string | null, suggestedName: string): Promise<SaveProjectResult> {
+async function saveProject(
+  window: BrowserWindow | null,
+  text: string,
+  handle: string | null,
+  suggestedName: string
+): Promise<SaveProjectResult> {
   let path = handle ? projects.path(handle) : null
   if (!path) {
     const safeName = suggestedName.replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Livery'
@@ -240,7 +259,9 @@ ipcMain.handle(IPC.saveProject, (event, text: unknown, handle: unknown, suggeste
     : { status: 'error', message: t('errors.badRequest') }
 )
 ipcMain.handle(IPC.exportToGame, (_event, skin: unknown, region: unknown) => exportToGame(skin, region))
-ipcMain.handle(IPC.exportToFolder, (event, skin: unknown, region: unknown) => exportToFolder(BrowserWindow.fromWebContents(event.sender), skin, region))
+ipcMain.handle(IPC.exportToFolder, (event, skin: unknown, region: unknown) =>
+  exportToFolder(BrowserWindow.fromWebContents(event.sender), skin, region)
+)
 ipcMain.on(IPC.closeWindow, (event) => BrowserWindow.fromWebContents(event.sender)?.close())
 
 app.whenReady().then(async () => {

@@ -56,10 +56,7 @@ describe('compositeLayers', () => {
   })
 
   it('applies the screen blend mode', () => {
-    const { image } = run([
-      solid('grey', [128, 128, 128, 255]),
-      solid('wire', [128, 0, 0, 255], undefined, { blendMode: 'screen' })
-    ])
+    const { image } = run([solid('grey', [128, 128, 128, 255]), solid('wire', [128, 0, 0, 255], undefined, { blendMode: 'screen' })])
     expect(pixel(image.data, 0)).toEqual([192, 128, 128, 255])
   })
 
@@ -96,7 +93,11 @@ describe('compositeLayers', () => {
         channels: [{ shadowInput: 0, highlightInput: 255, shadowOutput: 10, highlightOutput: 225, midtoneInput: 1 }]
       }
     }
-    const { image } = run([solid('white', [255, 255, 255, 255]), levels, solid('black', [0, 0, 0, 255], { left: 0, top: 0, width: 1, height: 1 })])
+    const { image } = run([
+      solid('white', [255, 255, 255, 255]),
+      levels,
+      solid('black', [0, 0, 0, 255], { left: 0, top: 0, width: 1, height: 1 })
+    ])
     expect(pixel(image.data, 1)).toEqual([225, 225, 225, 255])
     // The black layer is above the adjustment, so it keeps its value.
     expect(pixel(image.data, 0)).toEqual([0, 0, 0, 255])
@@ -174,7 +175,7 @@ describe('classifyTemplate', () => {
     const s = classify([
       { name: 'base' },
       group('carbon', [{ name: 'Shape 502' }]),
-      group('Number Plates - Don\'t move!', []),
+      group("Number Plates - Don't move!", []),
       levels,
       { name: 'Mask(Disable for export)' },
       regions,
@@ -192,13 +193,25 @@ describe('classifyTemplate', () => {
     for (const wire of ['UVW', 'Wire', 'WIRE', 'WireEVO', 'Body_UV']) {
       expect(classify([{ name: 'Base' }, levels, regions, { name: wire }]).wireframe?.name).toBe(wire)
     }
-    const s = classify([{ name: 'Base' }, levels, { name: 'Maks(Disable for export)' }, group('Regions', [{ name: 'Region 0' }]), { name: 'UVW' }])
+    const s = classify([
+      { name: 'Base' },
+      levels,
+      { name: 'Maks(Disable for export)' },
+      group('Regions', [{ name: 'Region 0' }]),
+      { name: 'UVW' }
+    ])
     expect(s.mask?.name).toBe('Maks(Disable for export)')
     expect(names(s.regions)).toEqual(['Region 0'])
   })
 
   it('guesses the wireframe and the mask from their position (Aston Martin Vantage, Ferrari 488 GTE)', () => {
-    const s = classify([{ name: 'Base' }, { name: 'Albedo', adjustment: { type: 'levels' } }, { name: 'Color Fill 1' }, regions, { name: 'Background', blendMode: 'screen' }])
+    const s = classify([
+      { name: 'Base' },
+      { name: 'Albedo', adjustment: { type: 'levels' } },
+      { name: 'Color Fill 1' },
+      regions,
+      { name: 'Background', blendMode: 'screen' }
+    ])
     expect(s.wireframe?.name).toBe('Background')
     expect(s.mask?.name).toBe('Color Fill 1')
     expect(names(s.content)).toEqual(['Base', 'Albedo'])

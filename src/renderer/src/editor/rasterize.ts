@@ -19,7 +19,14 @@ async function loadImages(layers: UserLayer[], assets: LiveryDocument['assets'])
 }
 
 /** One Konva node for one user layer. The editor canvas draws the same shapes with react-konva. */
-function layerNode(layer: UserLayer, width: number, height: number, color: string, opacity: number, image?: CanvasImageSource): Konva.Shape | null {
+function layerNode(
+  layer: UserLayer,
+  width: number,
+  height: number,
+  color: string,
+  opacity: number,
+  image?: CanvasImageSource
+): Konva.Shape | null {
   const common = { ...layer.transform, opacity, listening: false }
   switch (layer.kind) {
     case 'fill':
@@ -57,7 +64,12 @@ async function draw(nodes: (Konva.Shape | null)[], width: number, height: number
 }
 
 /** The visible user layers with their colours and opacity, as they go into the skin. */
-export async function rasterizeSkin(layers: UserLayer[], assets: LiveryDocument['assets'], width: number, height: number): Promise<ImageBitmap> {
+export async function rasterizeSkin(
+  layers: UserLayer[],
+  assets: LiveryDocument['assets'],
+  width: number,
+  height: number
+): Promise<ImageBitmap> {
   const images = await loadImages(layers, assets)
   return draw(
     layers
@@ -72,13 +84,25 @@ export async function rasterizeSkin(layers: UserLayer[], assets: LiveryDocument[
  * The visible user layers in their region colour, at full opacity, for the region map. Base layers are left
  * out: they keep the template regions (ADR-0023).
  */
-export async function rasterizeRegions(layers: UserLayer[], assets: LiveryDocument['assets'], width: number, height: number): Promise<ImageBitmap> {
+export async function rasterizeRegions(
+  layers: UserLayer[],
+  assets: LiveryDocument['assets'],
+  width: number,
+  height: number
+): Promise<ImageBitmap> {
   const images = await loadImages(layers, assets)
   return draw(
     layers
       .filter((l) => l.visible && l.region !== 'base')
       .map((l) =>
-        layerNode(l, width, height, REGION_RGB[l.region], 1, l.kind === 'image' ? regionShape(l.assetId, images[l.assetId], REGION_TRIPLET[l.region]) : undefined)
+        layerNode(
+          l,
+          width,
+          height,
+          REGION_RGB[l.region],
+          1,
+          l.kind === 'image' ? regionShape(l.assetId, images[l.assetId], REGION_TRIPLET[l.region]) : undefined
+        )
       ),
     width,
     height

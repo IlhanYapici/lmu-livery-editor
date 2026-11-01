@@ -17,7 +17,6 @@ type Props = {
   onContinue: () => void
 }
 
-
 /** Category → car → variant, in the style of the car selection screen of the game. */
 export function SelectScreen({ catalogue, selection, onSelect, onContinue }: Props) {
   const { t } = useTranslation()
@@ -96,9 +95,7 @@ export function SelectScreen({ catalogue, selection, onSelect, onContinue }: Pro
           {category.cars.map((c) => (
             <ToggleGroup.Item key={c.id} value={c.id} className={styles.carTile}>
               <span className={styles.tileName}>{c.name}</span>
-              <span className={styles.tileCount}>
-                {t('select.variantCount', { count: c.variants.length })}
-              </span>
+              <span className={styles.tileCount}>{t('select.variantCount', { count: c.variants.length })}</span>
             </ToggleGroup.Item>
           ))}
         </ToggleGroup.Root>

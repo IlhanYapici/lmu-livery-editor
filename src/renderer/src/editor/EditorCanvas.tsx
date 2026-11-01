@@ -59,9 +59,22 @@ function useAssetImages(assets: LiveryDocument['assets']): Record<string, HTMLIm
   return images
 }
 
-type Draft = { kind: 'rect'; x0: number; y0: number; x1: number; y1: number } | { kind: 'polygon'; points: number[]; cursor: [number, number] | null }
+type Draft =
+  | { kind: 'rect'; x0: number; y0: number; x1: number; y1: number }
+  | { kind: 'polygon'; points: number[]; cursor: [number, number] | null }
 
-export function EditorCanvas({ template, document: doc, tool, onToolDone, view, guides, fitSignal, onZoomChange, onDropFiles, viewCenterRef }: Props) {
+export function EditorCanvas({
+  template,
+  document: doc,
+  tool,
+  onToolDone,
+  view,
+  guides,
+  fitSignal,
+  onZoomChange,
+  onDropFiles,
+  viewCenterRef
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ width: 0, height: 0 })
   const [camera, setCamera] = useState({ scale: 0.2, x: 0, y: 0 })
@@ -185,7 +198,8 @@ export function EditorCanvas({ template, document: doc, tool, onToolDone, view, 
     if (e.evt.button !== 0) return
     const [x, y] = pointer()
     if (tool === 'rect') setDraft({ kind: 'rect', x0: x, y0: y, x1: x, y1: y })
-    else if (tool === 'polygon') setDraft((d) => ({ kind: 'polygon', points: [...(d?.kind === 'polygon' ? d.points : []), x, y], cursor: null }))
+    else if (tool === 'polygon')
+      setDraft((d) => ({ kind: 'polygon', points: [...(d?.kind === 'polygon' ? d.points : []), x, y], cursor: null }))
     else if (tool === 'text') {
       doc.addLayer('text', { transform: { x, y, rotation: 0, scaleX: 1, scaleY: 1 } })
       onToolDone()
@@ -214,7 +228,11 @@ export function EditorCanvas({ template, document: doc, tool, onToolDone, view, 
     const w = Math.abs(draft.x1 - draft.x0)
     const h = Math.abs(draft.y1 - draft.y0)
     if (w > 4 && h > 4) {
-      doc.addLayer('rect', { width: w, height: h, transform: { x: Math.min(draft.x0, draft.x1), y: Math.min(draft.y0, draft.y1), rotation: 0, scaleX: 1, scaleY: 1 } })
+      doc.addLayer('rect', {
+        width: w,
+        height: h,
+        transform: { x: Math.min(draft.x0, draft.x1), y: Math.min(draft.y0, draft.y1), rotation: 0, scaleX: 1, scaleY: 1 }
+      })
       onToolDone()
     }
     setDraft(null)
@@ -234,7 +252,13 @@ export function EditorCanvas({ template, document: doc, tool, onToolDone, view, 
         width={width}
         height={height}
         color={regionColors ? REGION_RGB[layer.region] : 'color' in layer ? layer.color : ''}
-        image={layer.kind === 'image' && assetImages[layer.assetId] ? (regionColors ? regionShape(layer.assetId, assetImages[layer.assetId], REGION_TRIPLET[layer.region]) : assetImages[layer.assetId]) : undefined}
+        image={
+          layer.kind === 'image' && assetImages[layer.assetId]
+            ? regionColors
+              ? regionShape(layer.assetId, assetImages[layer.assetId], REGION_TRIPLET[layer.region])
+              : assetImages[layer.assetId]
+            : undefined
+        }
         interactive={!regionColors && tool === 'select'}
         document={doc}
       />
@@ -306,7 +330,12 @@ export function EditorCanvas({ template, document: doc, tool, onToolDone, view, 
                 />
               )}
               {draft?.kind === 'polygon' && (
-                <Line points={[...draft.points, ...(draft.cursor ?? [])]} stroke="#ffffff" strokeWidth={2 / camera.scale} dash={[8 / camera.scale, 6 / camera.scale]} />
+                <Line
+                  points={[...draft.points, ...(draft.cursor ?? [])]}
+                  stroke="#ffffff"
+                  strokeWidth={2 / camera.scale}
+                  dash={[8 / camera.scale, 6 / camera.scale]}
+                />
               )}
             </Group>
             <Transformer
@@ -348,7 +377,8 @@ function UserLayerNode({ layer, width, height, color, image, interactive, docume
     draggable: movable && doc.selectedId === layer.id,
     onMouseDown: () => movable && doc.select(layer.id),
     onDragStart: doc.beginGesture,
-    onDragMove: (e: Konva.KonvaEventObject<DragEvent>) => doc.updateLayer(layer.id, { transform: { ...layer.transform, x: e.target.x(), y: e.target.y() } }),
+    onDragMove: (e: Konva.KonvaEventObject<DragEvent>) =>
+      doc.updateLayer(layer.id, { transform: { ...layer.transform, x: e.target.x(), y: e.target.y() } }),
     onDragEnd: doc.endGesture,
     onTransformStart: doc.beginGesture,
     onTransformEnd: (e: Konva.KonvaEventObject<Event>) => {

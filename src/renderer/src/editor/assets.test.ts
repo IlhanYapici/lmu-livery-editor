@@ -13,7 +13,9 @@ describe('image import helpers', () => {
   it('takes the SVG size from width and height, else its viewBox, else 1024 × 1024', () => {
     expect(svgSize('<svg width="120" height="60px" viewBox="0 0 400 100">')).toEqual({ width: 120, height: 60 })
     expect(svgSize('<svg width="50%" height="100%" viewBox="0 0 400 100">')).toEqual({ width: 400, height: 100 })
-    expect(svgSize('<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200"><rect width="10" height="10"/></svg>')).toEqual({ width: 400, height: 200 })
+    expect(
+      svgSize('<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200"><rect width="10" height="10"/></svg>')
+    ).toEqual({ width: 400, height: 200 })
     expect(svgSize('<svg viewBox="0 0 400 100">')).toEqual({ width: 400, height: 100 })
     expect(svgSize("<svg viewBox='-10,-10, 250.5, 80'>")).toEqual({ width: 251, height: 80 })
     expect(svgSize('<svg>')).toEqual({ width: 1024, height: 1024 })
