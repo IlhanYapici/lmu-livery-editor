@@ -1,0 +1,20 @@
+# Distribution and updates: NSIS installer, GitHub releases, release-please, electron-updater
+
+**Status:** accepted (2026-11-01)
+
+Users download the app from the GitHub releases of this repository. The app updates itself from the same releases.
+
+- **Installer:** NSIS from electron-builder, one-click, **per user** (`perMachine: false`): no administrator rights and no UAC prompt, also for updates. Desktop and Start menu shortcuts. The uninstaller keeps the settings in `%APPDATA%`. The file is `LMU-Livery-Editor-Setup-<version>.exe`. The `appId` (`com.lmu.livery-editor`) must not change: the updates find the install with it.
+- **Builds on Windows only:** the installer build edits the exe resources (icon, version) with rcedit, which needs Wine on Linux. `npm run dist:installer` runs in CI on `windows-latest`. `npm run dist:win` stays the local test build (`dist/win-unpacked`, no exe edit) for `deploy:win`.
+- **No code signing for now.** Azure Artifact Signing accepts individuals only in the USA and Canada. A standard certificate costs money each year. SmartScreen therefore shows "Windows protected your PC"; the README tells users what to do. The user applies to the **SignPath Foundation** (free signing for open source projects; the publisher shown is "SignPath Foundation"). When it accepts, a new ADR records the signing step.
+- **Updates: electron-updater** with the `github` provider (`publish` in `electron-builder.yml`, which writes `app-update.yml` into the app). The repository is public, so the app needs no token. Only the installed app checks (`app.isPackaged`): at start and every 6 hours, with a background download. A banner offers "Restart now" (through the unsaved-changes question) or "Later" (`autoInstallOnAppQuit`). Errors go to the log only (`src/main/updater.ts`).
+- **Versions and changelog: release-please** (`release-please-config.json`, `.release-please-manifest.json`). It reads the Conventional Commits on `master` and keeps a release pull request up to date: `feat` raises the minor version, `fix` and `perf` the patch version (before 1.0.0). Merging that pull request makes the tag `vX.Y.Z`, the GitHub release and `CHANGELOG.md`. The manifest started at `0.0.0`, so the first release is `0.1.0`.
+- **Token:** pull requests and tags made with `GITHUB_TOKEN` start no workflow, so the required check `windows` would never run on the release pull request (ADR-0029). The workflow uses a fine-grained personal access token of the maintainer, secret `RELEASE_PLEASE_TOKEN` (this repository only; Contents and Pull requests read and write; it expires after one year).
+- **Release workflow** (`.github/workflows/release.yml`, on push to `master`): job 1 runs release-please; job 2 runs on Windows only when a release was made, builds the installer at the tag and uploads the exe, its `.blockmap` and `latest.yml` with `gh release upload`. It does not run the tests again: the same commit passed the required check.
+
+## Consequences
+
+- A release is: merge `feat`/`fix` pull requests, then merge the release pull request. Nobody writes a version number by hand.
+- The release is public a few minutes before its files are uploaded. In that time the update check fails (only logged; the app checks again after 6 hours) and the release page has no installer. A draft-then-publish flow would close this gap; it is not used because release-please needs extra options (`draft`, `force-tag-creation`) for it. For the same reason, GitHub "immutable releases" must stay off: they refuse uploads after publication.
+- When the token expires, release-please fails until the maintainer makes a new token.
+- `CHANGELOG.md` is written by release-please; oxfmt ignores it.
