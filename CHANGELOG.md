@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/IlhanYapici/lmu-livery-editor/compare/v0.2.0...v0.2.1) (2026-11-01)
+
+
+### Bug Fixes
+
+* **ui:** show "Exporting the livery…" during an export ([f7856a1](https://github.com/IlhanYapici/lmu-livery-editor/commit/f7856a1e64c6150186ce93e7d11fc690e9975158))
+
 ## [0.2.0](https://github.com/IlhanYapici/lmu-livery-editor/compare/v0.1.1...v0.2.0) (2026-11-01)
 
 
