@@ -5,6 +5,7 @@
   "packages": {
     ".": {
       "package-name": "lmu-livery-editor",
+      "initial-version": "0.1.0",
       "changelog-path": "CHANGELOG.md"
     }
   }

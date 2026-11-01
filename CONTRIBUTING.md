@@ -37,7 +37,7 @@ A ruleset that nobody can bypass, also not the administrators:
 Releases come from the commits on `master` ([ADR-0030](docs/adr/0030-distribution-and-updates.md)). Nobody writes a version number by hand.
 
 1. The commit types set the next version: `feat` raises the minor version, `fix` and `perf` the patch version. Other types (`build`, `ci`, `docs`, `test`, `refactor`, `style`, `chore`) make no release and do not go into the changelog.
-2. After each merge, release-please updates the pull request "chore(main): release X.Y.Z" (version in `package.json`, `CHANGELOG.md`).
+2. After each merge, release-please updates the pull request "chore(master): release X.Y.Z" (version in `package.json`, `CHANGELOG.md`).
 3. To release, merge that pull request when its CI check is green. The workflow `Release` makes the tag `vX.Y.Z` and the GitHub release, then builds the installer on Windows and uploads it with `latest.yml`. The installed apps find the update.
 
 Do not make `v*` tags by hand.
