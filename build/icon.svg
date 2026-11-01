@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs><clipPath id="r"><rect width="256" height="256" rx="48"/></clipPath></defs>
+  <g clip-path="url(#r)">
+    <rect width="256" height="256" fill="#141519"/>
+    <path d="M-20 256 L150 -20 L256 -20 L256 60 L60 256 Z" fill="#FF1E44"/>
+    <path d="M118 256 L256 92 L256 136 L160 256 Z" fill="#FFFFFF"/>
+    <path d="M178 256 L256 162 L256 194 L206 256 Z" fill="#FFFFFF"/>
+  </g>
+</svg>

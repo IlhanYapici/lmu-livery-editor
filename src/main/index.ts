@@ -234,6 +234,7 @@ function createWindow(): void {
     // Below this size the side panel leaves too little room for the canvas.
     minWidth: 1200,
     minHeight: 760,
+    title: `LMU Livery Editor ${app.getVersion()}`,
     backgroundColor: '#101114',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -243,6 +244,8 @@ function createWindow(): void {
     }
   })
 
+  // Keep the title with the version: the page <title> must not replace it.
+  window.on('page-title-updated', (event) => event.preventDefault())
   window.webContents.on('will-prevent-unload', (event) => confirmClose(window, event))
 
   if (process.env.ELECTRON_RENDERER_URL) window.loadURL(process.env.ELECTRON_RENDERER_URL)

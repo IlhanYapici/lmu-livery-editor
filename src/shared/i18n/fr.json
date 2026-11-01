@@ -31,6 +31,12 @@
     "selectAnother": "Sélectionner un autre dossier",
     "close": "Fermer"
   },
+  "about": {
+    "title": "À propos",
+    "version": "LMU Livery Editor · version {{version}}",
+    "licence": "Logiciel libre sous licence MIT.",
+    "disclaimer": "Cette application n'est ni créée ni approuvée par Motorsport Games, Studio 397 ou l'ACO. Le Mans Ultimate est une marque de ses propriétaires."
+  },
   "select": {
     "title": "Sélectionner un modèle",
     "readingTemplates": "Lecture des modèles…",

@@ -1,16 +1,25 @@
 appId: com.lmu.livery-editor
 productName: LMU Livery Editor
+copyright: Copyright © 2026 IlhanYapici
 electronLanguages:
   - en-US
   - fr
 directories:
   output: dist
+  buildResources: build
 files:
   - out/**
   - package.json
 win:
+  icon: build/icon.ico
   target:
-    - target: dir
+    - target: nsis
       arch: x64
-  # Editing the exe resources needs Wine on Linux. Test builds keep the default Electron icon and details.
-  signAndEditExecutable: false
+# One-click install for the current user only: no administrator rights, no UAC prompt.
+# The uninstaller keeps the settings in %APPDATA% (deleteAppDataOnUninstall is false by default).
+nsis:
+  oneClick: true
+  perMachine: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  artifactName: LMU-Livery-Editor-Setup-${version}.${ext}
