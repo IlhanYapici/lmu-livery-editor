@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.0](https://github.com/IlhanYapici/lmu-livery-editor/compare/v0.1.1...v0.2.0) (2026-11-01)
+
+
+### Features
+
+* **main:** write the updater messages to a log file ([522952f](https://github.com/IlhanYapici/lmu-livery-editor/commit/522952fdccbabc515a7f6889a1c90617f556206f))
+
+
+### Bug Fixes
+
+* **main:** load electron-updater with a static import ([3e566c6](https://github.com/IlhanYapici/lmu-livery-editor/commit/3e566c6d51db951d830268b8d0faf768b984ad8f))
+* **main:** show the update banner also when the download ends before the window is ready ([5be4107](https://github.com/IlhanYapici/lmu-livery-editor/commit/5be4107bfa902e82dbc3f1c6e8b68817d73f369e))
+
 ## [0.1.1](https://github.com/IlhanYapici/lmu-livery-editor/compare/v0.1.0...v0.1.1) (2026-11-01)
 
 
