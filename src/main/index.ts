@@ -19,13 +19,14 @@ import { loadSettings, saveSettings } from './settings'
 import { findLiveryTemplatesDir, locateGameDir, nodeHost } from './steam'
 import { resolveTemplateUrl } from './templateProtocol'
 import { scanTemplates } from './templates'
+import { InstallRequest } from './installRequest'
 import { startUpdates } from './updater'
 
 // End-to-end tests give the app its own user-data folder, so they never touch the real settings (ADR-0027).
 if (process.env.LMU_USER_DATA_DIR) app.setPath('userData', process.env.LMU_USER_DATA_DIR)
 
-/** True after "Restart now" on the update banner: the app installs the update when the window closes. */
-let installOnClose = false
+/** "Restart now" on the update banner: the app installs the update when the window closes. */
+const installRequest = new InstallRequest()
 /** Installs the downloaded update and starts the app again. Only the installed app has it. */
 let installUpdate: (() => void) | null = null
 
@@ -229,9 +230,9 @@ function confirmClose(window: BrowserWindow, event: Electron.Event): void {
     cancelId: 2,
     noLink: true
   })
+  installRequest.answer((['save', 'dontSave', 'cancel'] as const)[choice])
   if (choice === 1) event.preventDefault() // Ignore the renderer block: close without saving.
   else if (choice === 0) window.webContents.send(IPC.saveBeforeClose)
-  else installOnClose = false
 }
 
 /** Only the installed app updates itself: not in development and not in the end-to-end tests. */
@@ -287,9 +288,12 @@ ipcMain.handle(IPC.exportToGame, (_event, skin: unknown, region: unknown) => exp
 ipcMain.handle(IPC.exportToFolder, (event, skin: unknown, region: unknown) =>
   exportToFolder(BrowserWindow.fromWebContents(event.sender), skin, region)
 )
-ipcMain.on(IPC.closeWindow, (event) => BrowserWindow.fromWebContents(event.sender)?.close())
+ipcMain.on(IPC.closeWindow, (event) => {
+  installRequest.savedAndClosing()
+  BrowserWindow.fromWebContents(event.sender)?.close()
+})
 ipcMain.on(IPC.installUpdate, (event) => {
-  installOnClose = true
+  installRequest.request()
   BrowserWindow.fromWebContents(event.sender)?.close()
 })
 
@@ -298,4 +302,4 @@ app.whenReady().then(async () => {
   protocol.handle(TEMPLATE_PROTOCOL, serveTemplate)
   void setUpUpdates(createWindow())
 })
-app.on('window-all-closed', () => (installOnClose && installUpdate ? installUpdate() : app.quit()))
+app.on('window-all-closed', () => (installRequest.install && installUpdate ? installUpdate() : app.quit()))
