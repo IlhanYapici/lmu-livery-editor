@@ -5,3 +5,5 @@ dist/
 *.tga
 *.tsbuildinfo
 coverage/
+test-results/
+playwright-report/

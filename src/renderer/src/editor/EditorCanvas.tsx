@@ -108,15 +108,20 @@ export function EditorCanvas({
     return () => observer.disconnect()
   }, [])
 
-  // Fit when the view size is first known, and when the user asks (fitSignal). Not at each resize: that would
-  // lose the user's zoom and pan, so size.width and size.height are left out on purpose.
+  // Fit the template in the view: on the first layout, on each resize until the user zooms or pans (the window
+  // can get its final size after the first layout), and always when the user asks (fitSignal).
+  const userMovedView = useRef(false)
+  const lastFitSignal = useRef(fitSignal)
   useEffect(() => {
     if (!hasSize) return
+    const asked = fitSignal !== lastFitSignal.current
+    lastFitSignal.current = fitSignal
+    if (asked) userMovedView.current = false
+    else if (userMovedView.current) return
     const scale = Math.min(size.width / width, size.height / height) * 0.96
-    // oxlint-disable-next-line react/set-state-in-effect -- the camera reacts to a command (fitSignal) or the first layout
+    // oxlint-disable-next-line react/set-state-in-effect -- the camera follows the layout (an external measure) or a command
     setCamera({ scale, x: (size.width - width * scale) / 2, y: (size.height - height * scale) / 2 })
-    // oxlint-disable-next-line react/exhaustive-deps -- see above
-  }, [hasSize, fitSignal, width, height])
+  }, [hasSize, size.width, size.height, fitSignal, width, height])
 
   useEffect(() => onZoomChange?.(camera.scale), [camera.scale, onZoomChange])
 
@@ -180,6 +185,7 @@ export function EditorCanvas({
 
   const onWheel = (e: Konva.KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault()
+    userMovedView.current = true
     const p = e.target.getStage()!.getPointerPosition()!
     setCamera((c) => {
       const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, c.scale * (e.evt.deltaY < 0 ? 1.15 : 1 / 1.15)))
@@ -214,6 +220,7 @@ export function EditorCanvas({
       const dx = e.evt.clientX - pan.current.x
       const dy = e.evt.clientY - pan.current.y
       pan.current = { x: e.evt.clientX, y: e.evt.clientY }
+      userMovedView.current = true
       setCamera((c) => ({ ...c, x: c.x + dx, y: c.y + dy }))
       return
     }

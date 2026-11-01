@@ -20,6 +20,9 @@ import { findLiveryTemplatesDir, locateGameDir, nodeHost } from './steam'
 import { resolveTemplateUrl } from './templateProtocol'
 import { scanTemplates } from './templates'
 
+// End-to-end tests give the app its own user-data folder, so they never touch the real settings (ADR-0027).
+if (process.env.LMU_USER_DATA_DIR) app.setPath('userData', process.env.LMU_USER_DATA_DIR)
+
 const settingsFile = () => join(app.getPath('userData'), 'settings.json')
 
 /** Translations for the dialogs and messages of the main process (ADR-0024). */
@@ -228,6 +231,9 @@ function createWindow(): void {
   const window = new BrowserWindow({
     width: 1400,
     height: 900,
+    // Below this size the side panel leaves too little room for the canvas.
+    minWidth: 1200,
+    minHeight: 760,
     backgroundColor: '#101114',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),

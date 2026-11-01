@@ -75,6 +75,7 @@ What goes into the files that the game reads.
 npm install                 # also installs the pre-commit hook (.githooks); if Electron fails with "Electron uninstall": node node_modules/electron/install.js
 npm test                    # unit and integration tests (vitest; synthetic templates, ADR-0027)
 npm run test:coverage       # coverage report in coverage/
+npm run e2e                 # build + Playwright end-to-end tests of the real app (ADR-0027)
 npm run typecheck
 npm run lint                # oxlint (see ADR-0026)
 npm run format              # oxfmt; npm run format:check in CI
