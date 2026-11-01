@@ -123,12 +123,10 @@ async function exportFiles(request: Extract<WorkerRequest, { type: 'export' }>) 
   if (!psd || !structure || !templateRegions) return
   const start = performance.now()
   const { width, height } = psd
-  post({ type: 'progress', stage: 'export-skin', fraction: null })
   const user: Raster = { left: 0, top: 0, width, height, data: bitmapPixels(request.user) }
   const skinImage = renderExact(psd, structure, { insertion: request.insertion, visibility: request.visibility }, user, decoder)
   const skin = encodeTga24(skinImage.data, width, height)
 
-  post({ type: 'progress', stage: 'export-regions', fraction: null })
   const regions = applyUserRegions(templateRegions.data, bitmapPixels(request.userRegions))
   const region = encodeTga24(regions, width, height)
   post({ type: 'exported', skin: skin.buffer, region: region.buffer, ms: performance.now() - start }, [skin.buffer, region.buffer])

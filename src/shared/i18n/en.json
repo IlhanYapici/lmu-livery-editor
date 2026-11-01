@@ -62,11 +62,9 @@
       "parsing": "Reading the layers",
       "guides": "Drawing the guides",
       "segments": "Drawing the template",
-      "export-skin": "Drawing the livery",
-      "export-regions": "Drawing the region map",
-      "writing": "Writing the files",
       "loading": "Loading"
     },
+    "exporting": "Exporting the livery",
     "cannotOpenTemplate": "Cannot open the template: {{error}}",
     "updating": "Updating the template…",
     "templateChanged": "This template changed since the project was saved (probably a game update). Check the positions of your layers.",
