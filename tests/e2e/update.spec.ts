@@ -16,3 +16,14 @@ test('shows the update banner; "Later" hides it', async ({ app }) => {
   await banner.getByRole('button', { name: 'Later' }).click()
   await expect(banner).toBeHidden()
 })
+
+test('shows the banner when the update was ready before the window subscribed', async ({ app }) => {
+  await expect(app.page.getByRole('button', { name: 'Continue' })).toBeVisible()
+  // As if the download had ended before the window loaded: the main process answers with a ready version.
+  await app.electronApp.evaluate(({ ipcMain }) => {
+    ipcMain.removeHandler('update:get-ready')
+    ipcMain.handle('update:get-ready', () => '9.9.9')
+  })
+  await app.page.reload()
+  await expect(app.page.getByRole('status').filter({ hasText: 'is ready to install' })).toContainText('Version 9.9.9')
+})

@@ -32,6 +32,8 @@ if (process.env.LMU_USER_DATA_DIR) app.setPath('userData', process.env.LMU_USER_
 const installRequest = new InstallRequest()
 /** Installs the downloaded update and starts the app again. Only the installed app has it. */
 let installUpdate: (() => void) | null = null
+/** The downloaded version, for a window that subscribes after the download ended. */
+let readyUpdate: string | null = null
 
 const settingsFile = () => join(app.getPath('userData'), 'settings.json')
 
@@ -241,7 +243,12 @@ function confirmClose(window: BrowserWindow, event: Electron.Event): void {
 /** Only the installed app updates itself: not in development and not in the end-to-end tests. */
 function setUpUpdates(window: BrowserWindow): void {
   if (!app.isPackaged) return
-  startUpdates(autoUpdater, { onReady: (version) => window.webContents.send(IPC.updateReady, version) })
+  startUpdates(autoUpdater, {
+    onReady: (version) => {
+      readyUpdate = version
+      window.webContents.send(IPC.updateReady, version)
+    }
+  })
   installUpdate = () => autoUpdater.quitAndInstall(true, true)
 }
 
@@ -294,6 +301,7 @@ ipcMain.on(IPC.closeWindow, (event) => {
   installRequest.savedAndClosing()
   BrowserWindow.fromWebContents(event.sender)?.close()
 })
+ipcMain.handle(IPC.getReadyUpdate, () => readyUpdate)
 ipcMain.on(IPC.installUpdate, (event) => {
   installRequest.request()
   BrowserWindow.fromWebContents(event.sender)?.close()
