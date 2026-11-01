@@ -8,7 +8,7 @@ export type WorkerRequest =
   | { type: 'exact'; requestId: number; insertion: number; visibility: Visibility; user: ImageBitmap }
   | { type: 'export'; insertion: number; visibility: Visibility; user: ImageBitmap; userRegions: ImageBitmap }
 
-export type LoadStage = 'reading' | 'parsing' | 'guides' | 'segments' | 'export-skin' | 'export-regions'
+export type LoadStage = 'reading' | 'parsing' | 'guides' | 'segments'
 
 export type WorkerResponse =
   | { type: 'progress'; stage: LoadStage; fraction: number | null }

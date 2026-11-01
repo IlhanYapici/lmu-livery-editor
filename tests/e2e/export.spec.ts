@@ -28,3 +28,17 @@ test('exports the two TGA files into the game, with a backup of the previous one
   expect(backups).toHaveLength(1)
   expect((await readdir(join(folders.liveries, 'Backups', backups[0]))).sort()).toEqual(['customskin.tga', 'customskin_region.tga'])
 })
+
+test('shows one text, "Exporting the livery…", during the whole export', async ({ app }) => {
+  const { page, electronApp } = app
+  await openFerrari(page)
+  // The main process never answers: the export stays at its last step (writing the files).
+  await electronApp.evaluate(({ ipcMain }) => {
+    ipcMain.removeHandler('export:game')
+    ipcMain.handle('export:game', () => new Promise(() => {}))
+  })
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  await page.getByRole('alertdialog', { name: 'Export to the game' }).getByRole('button', { name: 'Export' }).click()
+  await expect(page.getByText('Exporting the livery…')).toBeVisible()
+  await expect(page.getByText(/Drawing|Writing/)).toHaveCount(0)
+})

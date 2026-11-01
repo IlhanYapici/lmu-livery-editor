@@ -333,7 +333,8 @@ function EditorBody({
         )}
         {(template.exporting || writing) && (
           <div className={styles.overlay}>
-            <p>{t(`editor.stage.${writing ? 'writing' : (template.stage ?? 'loading')}`)}…</p>
+            {/* One text for the full export: drawing the two files, then writing them. */}
+            <p>{t('editor.exporting')}…</p>
             <div className={styles.progress}>
               <div className={styles.progressBusy} />
             </div>

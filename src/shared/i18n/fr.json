@@ -62,11 +62,9 @@
       "parsing": "Lecture des calques",
       "guides": "Dessin des repères",
       "segments": "Dessin du modèle",
-      "export-skin": "Dessin de la livrée",
-      "export-regions": "Dessin de la carte de la région",
-      "writing": "Écriture des fichiers",
       "loading": "Chargement"
     },
+    "exporting": "Export de la livrée",
     "cannotOpenTemplate": "Impossible d'ouvrir le modèle : {{error}}",
     "updating": "Mise à jour du modèle…",
     "templateChanged": "Ce modèle a changé depuis l'enregistrement du projet (sans doute une mise à jour du jeu). Vérifiez la position de vos calques.",
