@@ -59,6 +59,7 @@ What goes into the files that the game reads.
 
 - [0015](0015-windows-build-and-lan-deployment.md) Windows test build from Linux, deployed over SSH
 - [0026](0026-oxlint-and-oxfmt.md) Lint and format with oxlint and oxfmt
+- [0027](0027-test-strategy.md) Test strategy: synthetic templates, integration tests, end-to-end tests
 
 ### User interface
 
@@ -72,10 +73,12 @@ What goes into the files that the game reads.
 
 ```sh
 npm install                 # if Electron fails with "Electron uninstall": node node_modules/electron/install.js
-npm test                    # unit tests (vitest)
+npm test                    # unit and integration tests (vitest; synthetic templates, ADR-0027)
+npm run test:coverage       # coverage report in coverage/
 npm run typecheck
 npm run lint                # oxlint (see ADR-0026)
 npm run format              # oxfmt; npm run format:check in CI
+npm run check               # format check + lint + typecheck + tests; stops at the first failure
 npm run dev                 # app with hot reload (on Linux: select the game folder by hand)
 npm run dist:win            # Windows build in dist/win-unpacked
 LMU_WIN_HOST=user@host npm run deploy:win

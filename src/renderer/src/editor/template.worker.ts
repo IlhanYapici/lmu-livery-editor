@@ -2,7 +2,7 @@
 import { getLayerImageData, getLayerMaskImageData, initializeCanvas, readPsd, type Psd } from 'ag-psd'
 import type { LayerDecoder, Raster } from '../../../shared/psd/composite'
 import { classifyTemplate, type TemplateStructure } from '../../../shared/psd/roles'
-import { nearestRegion, REGIONS } from '../../../shared/psd/regions'
+import { applyUserRegions } from '../../../shared/psd/regions'
 import { outlineTemplate, renderExact, renderGuides, renderSegments } from '../../../shared/psd/templateRender'
 import { encodeTga24 } from '../../../shared/tga'
 import type { WorkerRequest, WorkerResponse } from './templateMessages'
@@ -129,16 +129,7 @@ async function exportFiles(request: Extract<WorkerRequest, { type: 'export' }>) 
   const skin = encodeTga24(skinImage.data, width, height)
 
   post({ type: 'progress', stage: 'export-regions', fraction: null })
-  const regions = new Uint8ClampedArray(templateRegions.data)
-  const shapes = bitmapPixels(request.userRegions)
-  for (let i = 0; i < shapes.length; i += 4) {
-    if (shapes[i + 3] < 128) continue
-    // getImageData gives non-premultiplied colours, so edge pixels keep the hue of their shape.
-    const [r, g, b] = REGIONS[nearestRegion(shapes[i], shapes[i + 1], shapes[i + 2])].rgb
-    regions[i] = r
-    regions[i + 1] = g
-    regions[i + 2] = b
-  }
+  const regions = applyUserRegions(templateRegions.data, bitmapPixels(request.userRegions))
   const region = encodeTga24(regions, width, height)
   post({ type: 'exported', skin: skin.buffer, region: region.buffer, ms: performance.now() - start }, [skin.buffer, region.buffer])
 }

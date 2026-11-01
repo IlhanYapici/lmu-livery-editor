@@ -57,3 +57,21 @@ export function buildRegionMap(regions: Layer[], decoder: LayerDecoder, width: n
   }
   return { image, counts, unsupported }
 }
+
+/**
+ * Draws the user region shapes over a copy of the template region map (ADR-0023): every shape pixel with
+ * 50 % alpha or more takes the nearest region colour, so the file never has mixed colours. `shapes` are
+ * non-premultiplied RGBA pixels (as getImageData gives them) of the same size.
+ */
+export function applyUserRegions(templateRegions: Uint8ClampedArray, shapes: Uint8ClampedArray): Uint8ClampedArray<ArrayBuffer> {
+  if (shapes.length !== templateRegions.length) throw new Error('applyUserRegions: sizes differ')
+  const regions = new Uint8ClampedArray(templateRegions)
+  for (let i = 0; i < shapes.length; i += 4) {
+    if (shapes[i + 3] < 128) continue
+    const [r, g, b] = REGIONS[nearestRegion(shapes[i], shapes[i + 1], shapes[i + 2])].rgb
+    regions[i] = r
+    regions[i + 1] = g
+    regions[i + 2] = b
+  }
+  return regions
+}
