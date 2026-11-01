@@ -32,9 +32,11 @@
   background: rgb(255 255 255 / 8%);
 }
 
-.button[data-state='on'] {
-  background: var(--color-text-soft);
-  color: #111;
+/* The selected tool. Use aria-checked, not data-state: the Tooltip trigger on the same element
+   replaces data-state ("closed", "delayed-open"), so data-state='on' never matches. */
+.button[aria-checked='true'] {
+  background: rgb(255 255 255 / 16%);
+  color: var(--color-text);
 }
 
 .tip {

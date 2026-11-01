@@ -14,3 +14,7 @@ Fonts: the game font is probably licensed. Titles, tabs and buttons use Bebas Ne
 
 - Base UI (headless, by the MUI team; some Radix authors work on it). Kept as an alternative: Radix is more widely used, but it gets fewer updates.
 - A styled library (MUI, Mantine). Rejected: hard to make look like the game.
+
+## Consequences
+
+- Two Radix parts on one element (for example `Tooltip.Trigger asChild` around a `ToggleGroup.Item`) both write `data-state`, and the last one wins: the tool buttons got `data-state="closed"` instead of `"on"`. Style such elements with their ARIA state (`[aria-checked='true']`, `[aria-pressed='true']`, `[aria-selected='true']`), not with `data-state`.
