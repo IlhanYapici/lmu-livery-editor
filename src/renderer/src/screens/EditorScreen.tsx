@@ -52,11 +52,15 @@ const seconds = (ms: number | null) => (ms === null ? '…' : formatSeconds(ms))
 export function EditorScreen(props: Props) {
   const [stores, setStores] = useState<{ template: TemplateStore; document: DocumentStore } | null>(null)
 
+  // The template store starts a Worker (an external system), so it is made in an effect, not during render:
+  // StrictMode runs effects twice and the cleanup ends the extra worker; during render it would leak one.
+  // The app gives the editor a new key for each opened project, so `project` does not change during its life.
   useEffect(() => {
     const template = createTemplateStore(props.variant.id)
+    // oxlint-disable-next-line react/set-state-in-effect -- the stores own the worker (see above)
     setStores({ template, document: createDocumentStore(props.variant.id, props.project ?? undefined) })
     return () => template.getState().dispose()
-  }, [props.variant.id])
+  }, [props.variant.id, props.project])
 
   return stores ? <EditorBody {...props} templateStore={stores.template} documentStore={stores.document} /> : null
 }
@@ -83,20 +87,23 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
   const selected = d.doc.layers.find((l) => l.id === d.selectedId) ?? null
 
   // Draw the template segments for the insertion point and visibility of the document.
+  const { render: renderTemplate, clearExact, requestExact, segments, updating, outline } = template
   useEffect(() => {
-    if (insertion !== null) template.render(insertion, d.doc.templateVisibility)
-  }, [insertion, d.doc.templateVisibility, template.render])
+    if (insertion !== null) renderTemplate(insertion, d.doc.templateVisibility)
+  }, [insertion, d.doc.templateVisibility, renderTemplate])
 
   // Exact preview: after the edits stop, only when the fast preview is not exact (ADR-0018).
+  // The selection is a dependency on purpose: selecting a layer drops the exact image, so the handles show.
+  const { selectedId } = d
   useEffect(() => {
-    template.clearExact()
-    if (!template.segments || template.segments.fastIsExact || template.updating || insertion === null) return
-    const { width, height } = template.outline!
+    clearExact()
+    if (!segments || segments.fastIsExact || updating || insertion === null || !outline) return
+    const { width, height } = outline
     const timer = setTimeout(async () => {
-      template.requestExact(await rasterizeSkin(d.doc.layers, d.doc.assets, width, height), insertion, d.doc.templateVisibility)
+      requestExact(await rasterizeSkin(d.doc.layers, d.doc.assets, width, height), insertion, d.doc.templateVisibility)
     }, EXACT_DELAY_MS)
     return () => clearTimeout(timer)
-  }, [d.doc, d.selectedId, template.segments, template.updating, insertion])
+  }, [d.doc, selectedId, segments, updating, insertion, outline, clearExact, requestExact])
 
   /** Saves the project. "Save as" (or the first save) asks for a file. Returns true when the file is written. */
   const save = useCallback(
@@ -110,7 +117,9 @@ function EditorBody({ category, car, variant, templateChanged, guardRef, onTitle
     [documentStore, variant, car.name, onError]
   )
 
-  guardRef.current = { hasUnsavedChanges: () => hasUnsavedChanges(documentStore.getState()), save: () => save(false) }
+  useEffect(() => {
+    guardRef.current = { hasUnsavedChanges: () => hasUnsavedChanges(documentStore.getState()), save: () => save(false) }
+  }, [guardRef, documentStore, save])
 
   useEffect(() => onTitle(`${d.fileName ?? t('app.untitled')}${dirty ? ' •' : ''}`), [d.fileName, dirty, onTitle, t])
 

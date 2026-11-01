@@ -1,4 +1,4 @@
-import type { Layer, PixelData, Psd } from 'ag-psd'
+import type { Layer, PixelData } from 'ag-psd'
 import { describe, expect, it } from 'vitest'
 import { compositeLayers, levelsTable, type LayerDecoder } from './composite'
 import { buildRegionMap } from './regions'

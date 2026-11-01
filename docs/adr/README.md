@@ -45,6 +45,7 @@ What goes into the files that the game reads.
 
 ### Build, test and deploy
 - [0015](0015-windows-build-and-lan-deployment.md) Windows test build from Linux, deployed over SSH
+- [0026](0026-oxlint-and-oxfmt.md) Lint and format with oxlint and oxfmt
 
 ### User interface
 - [0016](0016-ui-radix-css-modules-game-style.md) UI: Radix Primitives, CSS Modules, game style
@@ -59,6 +60,8 @@ What goes into the files that the game reads.
 npm install                 # if Electron fails with "Electron uninstall": node node_modules/electron/install.js
 npm test                    # unit tests (vitest)
 npm run typecheck
+npm run lint                # oxlint (see ADR-0026)
+npm run format              # oxfmt; npm run format:check in CI
 npm run dev                 # app with hot reload (on Linux: select the game folder by hand)
 npm run dist:win            # Windows build in dist/win-unpacked
 LMU_WIN_HOST=user@host npm run deploy:win

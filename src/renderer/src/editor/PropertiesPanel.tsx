@@ -167,7 +167,12 @@ function ImageInfo({ layer, asset }: { layer: Extract<UserLayer, { kind: 'image'
 /** A number field that commits on Enter or when it loses focus, so typing makes one history step. */
 function NumberField({ label, value, onCommit, step = 1, min }: { label: string; value: number; onCommit: (v: number) => void; step?: number; min?: number }) {
   const [text, setText] = useState(format(value))
-  useEffect(() => setText(format(value)), [value])
+  // When the value changes from outside (undo, a drag on the canvas), show it. React's "previous value" pattern.
+  const [shown, setShown] = useState(value)
+  if (shown !== value) {
+    setShown(value)
+    setText(format(value))
+  }
   const commit = () => {
     const v = Number(text)
     if (Number.isFinite(v) && v !== value) onCommit(min === undefined ? v : Math.max(min, v))
@@ -191,7 +196,11 @@ function NumberField({ label, value, onCommit, step = 1, min }: { label: string;
 
 function TextField({ value, onCommit }: { value: string; onCommit: (v: string) => void }) {
   const [text, setText] = useState(value)
-  useEffect(() => setText(value), [value])
+  const [shown, setShown] = useState(value)
+  if (shown !== value) {
+    setShown(value)
+    setText(value)
+  }
   return <input className={styles.input} value={text} onChange={(e) => setText(e.target.value)} onBlur={() => text !== value && onCommit(text)} onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()} />
 }
 

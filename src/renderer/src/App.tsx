@@ -53,7 +53,6 @@ export function App() {
 
   useEffect(() => {
     if (location?.status !== 'found') return
-    setCatalogue(null)
     window.lmu.listTemplates().then((next) => {
       setCatalogue(next)
       const first = next[0]?.cars[0]
@@ -115,7 +114,11 @@ export function App() {
 
   const choose = async () => {
     const result = await window.lmu.chooseGameDir()
-    if (result.status !== 'cancelled') leaveEditor(() => setLocation(result))
+    if (result.status !== 'cancelled')
+      leaveEditor(() => {
+        setCatalogue(null) // Shows "Reading templates…" until the new list arrives.
+        setLocation(result)
+      })
   }
 
   if (location?.status !== 'found') {

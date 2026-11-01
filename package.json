@@ -12,7 +12,10 @@
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "dist:win": "electron-vite build && electron-builder --win",
     "deploy:win": "scripts/deploy-win.sh",
-    "audit:build": "rolldown scripts/audit-templates.ts --platform node --format cjs --file out/audit/audit-templates.cjs"
+    "audit:build": "rolldown scripts/audit-templates.ts --platform node --format cjs --file out/audit/audit-templates.cjs",
+    "lint": "oxlint",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check"
   },
   "devDependencies": {
     "@fontsource/bebas-neue": "^5.3.0",
@@ -26,8 +29,11 @@
     "electron": "^45.1.0",
     "electron-builder": "^26.18.0",
     "electron-vite": "^6.0.0",
+    "eslint-plugin-i18next": "^6.1.5",
     "i18next": "^26.6.0",
     "konva": "^10.9.0",
+    "oxfmt": "0.75.0",
+    "oxlint": "1.90.0",
     "radix-ui": "^1.8.1",
     "react": "^19.3.1",
     "react-colorful": "^5.8.1",

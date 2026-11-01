@@ -1,0 +1,71 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "typescript",
+    "react",
+    "import"
+  ],
+  "jsPlugins": [
+    "eslint-plugin-i18next"
+  ],
+  "categories": {
+    "correctness": "error"
+  },
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2024": true
+  },
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "error",
+    "react/jsx-key": "error",
+    "typescript/no-explicit-any": "warn",
+    "no-unused-vars": "error"
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/renderer/src/**/*.tsx"
+      ],
+      "rules": {
+        "i18next/no-literal-string": [
+          "error",
+          {
+            "mode": "jsx-only",
+            "jsx-attributes": {
+              "include": [
+                "aria-label",
+                "title",
+                "label",
+                "placeholder",
+                "alt",
+                "text"
+              ]
+            },
+            "words": {
+              "exclude": [
+                "[0-9!-/:-@[-`{-~]+",
+                "[A-Z_-]+",
+                "^[^\\p{L}]*$"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/*.test.ts"
+      ],
+      "rules": {
+        "typescript/no-explicit-any": "off"
+      }
+    }
+  ],
+  "ignorePatterns": [
+    "out/**",
+    "dist/**",
+    "node_modules/**"
+  ]
+}

@@ -55,7 +55,7 @@ function useAssetImages(assets: LiveryDocument['assets']): Record<string, HTMLIm
     return () => {
       alive = false
     }
-  }, [assets])
+  }, [assets, images])
   return images
 }
 
@@ -65,7 +65,14 @@ export function EditorCanvas({ template, document: doc, tool, onToolDone, view, 
   const containerRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ width: 0, height: 0 })
   const [camera, setCamera] = useState({ scale: 0.2, x: 0, y: 0 })
-  const [draft, setDraft] = useState<Draft | null>(null)
+  // A draft belongs to the tool that started it: after a tool change, the old draft counts as none.
+  const [draftState, setDraftState] = useState<{ tool: Tool; draft: Draft } | null>(null)
+  const draft = draftState?.tool === tool ? draftState.draft : null
+  const setDraft = (next: Draft | null | ((current: Draft | null) => Draft | null)) =>
+    setDraftState((state) => {
+      const value = typeof next === 'function' ? next(state?.tool === tool ? state.draft : null) : next
+      return value ? { tool, draft: value } : null
+    })
   const paintRef = useRef<Konva.Layer>(null)
   const wireRef = useRef<Konva.Layer>(null)
   const userRef = useRef<Konva.Group>(null)
@@ -77,7 +84,9 @@ export function EditorCanvas({ template, document: doc, tool, onToolDone, view, 
   const hasSize = size.width > 0
   const assetImages = useAssetImages(doc.assets)
 
-  viewCenterRef.current = () => ({ x: (size.width / 2 - camera.x) / camera.scale, y: (size.height / 2 - camera.y) / camera.scale })
+  useEffect(() => {
+    viewCenterRef.current = () => ({ x: (size.width / 2 - camera.x) / camera.scale, y: (size.height / 2 - camera.y) / camera.scale })
+  }, [viewCenterRef, size, camera])
 
   useLayoutEffect(() => {
     const element = containerRef.current!
@@ -86,11 +95,14 @@ export function EditorCanvas({ template, document: doc, tool, onToolDone, view, 
     return () => observer.disconnect()
   }, [])
 
-  // Fit when the view size is known, and when the user asks.
+  // Fit when the view size is first known, and when the user asks (fitSignal). Not at each resize: that would
+  // lose the user's zoom and pan, so size.width and size.height are left out on purpose.
   useEffect(() => {
     if (!hasSize) return
     const scale = Math.min(size.width / width, size.height / height) * 0.96
+    // oxlint-disable-next-line react/set-state-in-effect -- the camera reacts to a command (fitSignal) or the first layout
     setCamera({ scale, x: (size.width - width * scale) / 2, y: (size.height - height * scale) / 2 })
+    // oxlint-disable-next-line react/exhaustive-deps -- see above
   }, [hasSize, fitSignal, width, height])
 
   useEffect(() => onZoomChange?.(camera.scale), [camera.scale, onZoomChange])
@@ -120,23 +132,6 @@ export function EditorCanvas({ template, document: doc, tool, onToolDone, view, 
     transformer.nodes(node && tool === 'select' ? [node] : [])
   }, [doc.selectedId, doc.layers, tool, assetImages]) // assetImages: an image node exists only after its image is decoded.
 
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.code === 'Space') spaceDown.current = true
-      if (draft?.kind === 'polygon' && e.key === 'Enter') finishPolygon()
-      if (draft && e.key === 'Escape') setDraft(null)
-    }
-    const up = (e: KeyboardEvent) => e.code === 'Space' && (spaceDown.current = false)
-    window.addEventListener('keydown', down)
-    window.addEventListener('keyup', up)
-    return () => {
-      window.removeEventListener('keydown', down)
-      window.removeEventListener('keyup', up)
-    }
-  })
-
-  useEffect(() => setDraft(null), [tool])
-
   /** The pointer in template pixels. */
   const pointer = (): [number, number] => {
     const p = userRef.current!.getStage()!.getPointerPosition()!
@@ -154,6 +149,21 @@ export function EditorCanvas({ template, document: doc, tool, onToolDone, view, 
     setDraft(null)
     onToolDone()
   }
+
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.code === 'Space') spaceDown.current = true
+      if (draft?.kind === 'polygon' && e.key === 'Enter') finishPolygon()
+      if (draft && e.key === 'Escape') setDraft(null)
+    }
+    const up = (e: KeyboardEvent) => e.code === 'Space' && (spaceDown.current = false)
+    window.addEventListener('keydown', down)
+    window.addEventListener('keyup', up)
+    return () => {
+      window.removeEventListener('keydown', down)
+      window.removeEventListener('keyup', up)
+    }
+  })
 
   const onWheel = (e: Konva.KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault()
