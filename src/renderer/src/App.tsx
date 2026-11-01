@@ -6,6 +6,7 @@ import { Button } from './components/Button'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { GameFolderDialog } from './components/GameFolderDialog'
 import { TopBar } from './components/TopBar'
+import { UpdateBanner } from './components/UpdateBanner'
 import type { InitialProject } from './editor/documentStore'
 import { EditorScreen, type EditorGuard } from './screens/EditorScreen'
 import { LocateScreen } from './screens/LocateScreen'
@@ -129,7 +130,10 @@ export function App() {
 
   if (location?.status !== 'found') {
     return (
-      <LocateScreen location={location?.status === 'not-found' || location?.status === 'invalid' ? location : null} onChoose={choose} />
+      <div className={styles.app}>
+        <UpdateBanner />
+        <LocateScreen location={location?.status === 'not-found' || location?.status === 'invalid' ? location : null} onChoose={choose} />
+      </div>
     )
   }
 
@@ -199,6 +203,7 @@ export function App() {
   if (editing && category && car && variant) {
     return (
       <div className={styles.app}>
+        <UpdateBanner />
         <TopBar title={t('editor.title')} subtitle={title} onBack={() => leaveEditor(() => setEditing(null))} right={right} />
         <EditorScreen
           key={editing.key}
@@ -218,6 +223,7 @@ export function App() {
 
   return (
     <div className={styles.app}>
+      <UpdateBanner />
       <TopBar title={t('select.title')} right={right} />
       {catalogue === null && <p className={styles.message}>{t('select.readingTemplates')}</p>}
       {catalogue?.length === 0 && <p className={styles.message}>{t('select.noTemplates')}</p>}

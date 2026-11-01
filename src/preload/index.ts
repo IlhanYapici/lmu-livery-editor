@@ -16,7 +16,13 @@ const api: LmuApi = {
   },
   closeWindow: () => ipcRenderer.send(IPC.closeWindow),
   exportToGame: (skin, region) => ipcRenderer.invoke(IPC.exportToGame, skin, region),
-  exportToFolder: (skin, region) => ipcRenderer.invoke(IPC.exportToFolder, skin, region)
+  exportToFolder: (skin, region) => ipcRenderer.invoke(IPC.exportToFolder, skin, region),
+  onUpdateReady: (callback) => {
+    const listener = (_event: Electron.IpcRendererEvent, version: string) => callback(version)
+    ipcRenderer.on(IPC.updateReady, listener)
+    return () => ipcRenderer.removeListener(IPC.updateReady, listener)
+  },
+  installUpdate: () => ipcRenderer.send(IPC.installUpdate)
 }
 
 contextBridge.exposeInMainWorld('lmu', api)
