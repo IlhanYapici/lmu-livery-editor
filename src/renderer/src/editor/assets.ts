@@ -37,6 +37,18 @@ export function importSize(width: number, height: number, max = 2048): { width: 
   return { width: Math.round(width * k), height: Math.round(height * k) }
 }
 
+/** Above this enlargement, a raster image can look blurred in game. */
+export const UPSCALE_WARNING = 1.5
+
+/** How much a layer enlarges its source image (the larger of the two axes). */
+export function enlargement(layer: { width: number; height: number; transform: { scaleX: number; scaleY: number } }, asset: Asset): number {
+  return Math.max((layer.width * Math.abs(layer.transform.scaleX)) / asset.width, (layer.height * Math.abs(layer.transform.scaleY)) / asset.height)
+}
+
+/** True for a raster image enlarged more than UPSCALE_WARNING times. SVG stays sharp at any size. */
+export const isUpscaled = (layer: Parameters<typeof enlargement>[0], asset: Asset) =>
+  asset.type !== 'image/svg+xml' && enlargement(layer, asset) > UPSCALE_WARNING
+
 const objectUrls = new Map<string, string>()
 
 /** A blob URL for an asset (kept for the session: assets never change). */

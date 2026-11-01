@@ -1,7 +1,8 @@
 import { Toggle } from 'radix-ui'
 import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
-import { assetUrl } from './assets'
+import { WarningIcon } from '../components/WarningIcon'
+import { assetUrl, enlargement, isUpscaled } from './assets'
 import type { LiveryDocument, UserLayer } from './document'
 import type { DocumentState } from './documentStore'
 import { RegionSelect } from './RegionSelect'
@@ -14,7 +15,7 @@ type Props = Pick<DocumentState, 'selectedId' | 'select' | 'updateLayer' | 'remo
 
 /** User layers, top to bottom. Drag a row to reorder it. */
 export function LayersPanel({ layers, assets, selectedId, select, updateLayer, removeLayer, duplicateLayer, moveLayer }: Props) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [dragged, setDragged] = useState<string | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
 
@@ -70,6 +71,13 @@ export function LayersPanel({ layers, assets, selectedId, select, updateLayer, r
               <span className={styles.name} onDoubleClick={() => setRenaming(layer.id)} title={t('layers.renameHint')}>
                 {layer.name}
               </span>
+            )}
+            {layer.kind === 'image' && assets[layer.assetId] && isUpscaled(layer, assets[layer.assetId]) && (
+              <WarningIcon
+                label={t('properties.upscaled', {
+                  factor: new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(enlargement(layer, assets[layer.assetId]))
+                })}
+              />
             )}
             <span onClick={(e) => e.stopPropagation()}>
               <RegionSelect value={layer.region} onChange={(region) => updateLayer(layer.id, { region })} />

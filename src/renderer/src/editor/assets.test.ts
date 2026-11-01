@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { imageType, importSize, svgSize } from './assets'
+import { imageType, importSize, isUpscaled, svgSize } from './assets'
 
 describe('image import helpers', () => {
   it('finds the image type from the File type or the file name', () => {
@@ -23,5 +23,15 @@ describe('image import helpers', () => {
     expect(importSize(400, 100)).toEqual({ width: 400, height: 100 })
     expect(importSize(8000, 2000)).toEqual({ width: 2048, height: 512 })
     expect(importSize(1000, 4096)).toEqual({ width: 500, height: 2048 })
+  })
+
+  it('warns for raster images enlarged more than 1.5 times, never for SVG', () => {
+    const png = { type: 'image/png' as const, data: '', width: 200, height: 100 }
+    const svg = { ...png, type: 'image/svg+xml' as const }
+    const layer = (width: number, scaleX = 1) => ({ width, height: width / 2, transform: { scaleX, scaleY: 1 } })
+    expect(isUpscaled(layer(300), png)).toBe(false)
+    expect(isUpscaled(layer(301), png)).toBe(true)
+    expect(isUpscaled(layer(200, -2), png)).toBe(true)
+    expect(isUpscaled(layer(2000), svg)).toBe(false)
   })
 })

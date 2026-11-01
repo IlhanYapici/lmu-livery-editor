@@ -2,6 +2,8 @@ import { Select, Slider } from 'radix-ui'
 import { useEffect, useState } from 'react'
 import { HexColorInput, HexColorPicker } from 'react-colorful'
 import { useTranslation } from 'react-i18next'
+import { WarningIcon } from '../components/WarningIcon'
+import { enlargement, isUpscaled } from './assets'
 import { FONTS, type Asset, type UserLayer } from './document'
 import type { DocumentState } from './documentStore'
 import styles from './PropertiesPanel.module.css'
@@ -148,13 +150,14 @@ export function PropertiesPanel({ layer, table, asset, updateLayer, beginGesture
 /** Source size, and a warning when a raster image is enlarged so much that it looks blurred in game. */
 function ImageInfo({ layer, asset }: { layer: Extract<UserLayer, { kind: 'image' }>; asset: Asset }) {
   const { t } = useTranslation()
-  const factor = Math.max((layer.width * Math.abs(layer.transform.scaleX)) / asset.width, (layer.height * Math.abs(layer.transform.scaleY)) / asset.height)
+  const text = t('properties.upscaled', { factor: new Intl.NumberFormat(document.documentElement.lang || 'en', { maximumFractionDigits: 1 }).format(enlargement(layer, asset)) })
   return (
     <>
       <span className={styles.note}>{t('properties.source', { width: asset.width, height: asset.height })}</span>
-      {asset.type !== 'image/svg+xml' && factor > 1.5 && (
+      {isUpscaled(layer, asset) && (
         <span className={styles.warning} role="status">
-          {t('properties.upscaled', { factor: new Intl.NumberFormat(document.documentElement.lang || 'en', { maximumFractionDigits: 1 }).format(factor) })}
+          <WarningIcon label={text} />
+          <span>{text}</span>
         </span>
       )}
     </>

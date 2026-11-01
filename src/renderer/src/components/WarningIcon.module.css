@@ -1,0 +1,6 @@
+.icon {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  color: var(--class-gte);
+}
