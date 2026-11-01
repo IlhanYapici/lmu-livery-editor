@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "description": "Livery editor for Le Mans Ultimate",
+  "license": "MIT",
+  "author": "IlhanYapici",
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
