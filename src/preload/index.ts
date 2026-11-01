@@ -18,9 +18,15 @@ const api: LmuApi = {
   exportToGame: (skin, region) => ipcRenderer.invoke(IPC.exportToGame, skin, region),
   exportToFolder: (skin, region) => ipcRenderer.invoke(IPC.exportToFolder, skin, region),
   onUpdateReady: (callback) => {
+    let active = true
     const listener = (_event: Electron.IpcRendererEvent, version: string) => callback(version)
     ipcRenderer.on(IPC.updateReady, listener)
-    return () => ipcRenderer.removeListener(IPC.updateReady, listener)
+    // A small download can end before the window subscribes: ask for a version that is already ready.
+    void ipcRenderer.invoke(IPC.getReadyUpdate).then((version: string | null) => active && version && callback(version))
+    return () => {
+      active = false
+      ipcRenderer.removeListener(IPC.updateReady, listener)
+    }
   },
   installUpdate: () => ipcRenderer.send(IPC.installUpdate)
 }

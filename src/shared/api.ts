@@ -66,7 +66,10 @@ export interface LmuApi {
   exportToGame(skin: ArrayBuffer, region: ArrayBuffer): Promise<ExportResult>
   /** Writes the two TGA files into a folder that the user selects. */
   exportToFolder(skin: ArrayBuffer, region: ArrayBuffer): Promise<ExportResult>
-  /** Called when an update is downloaded and ready to install. Returns an unsubscribe function. */
+  /**
+   * Called when an update is downloaded and ready to install, also when it was ready before the call.
+   * Returns an unsubscribe function.
+   */
   onUpdateReady(callback: (version: string) => void): () => void
   /** Closes the window (with the unsaved-changes question), then installs the update and starts the app again. */
   installUpdate(): void
@@ -85,6 +88,7 @@ export const IPC = {
   exportToGame: 'export:game',
   exportToFolder: 'export:folder',
   updateReady: 'update:ready',
+  getReadyUpdate: 'update:get-ready',
   installUpdate: 'update:install'
 } as const
 
