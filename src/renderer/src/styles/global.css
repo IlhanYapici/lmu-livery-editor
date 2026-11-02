@@ -36,3 +36,40 @@ code {
   font-size: 0.9em;
   user-select: text;
 }
+
+/* Shared animations (ADR-0032). They use the scale and translate properties, not transform,
+   so they add to a transform that centres an element. Radix keeps a closed popup mounted
+   until its closing animation ends. In a CSS module, write global(pop-in): a plain name gets a
+   hash and then matches no keyframes. */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+
+@keyframes pop-out {
+  to {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    translate: 0 -100%;
+  }
+}

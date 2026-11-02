@@ -40,4 +40,17 @@
 
   --topbar-height: 64px;
   --radius: 2px;
+
+  /* Motion (ADR-0032): short and quiet. Closing uses the fast duration. */
+  --motion-fast: 120ms;
+  --motion-normal: 180ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Users who ask the system for less motion get changes with no visible animation. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 1ms;
+    --motion-normal: 1ms;
+  }
 }

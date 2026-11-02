@@ -28,6 +28,22 @@
   border: 1px solid var(--color-border);
 }
 
+.overlay[data-state='open'] {
+  animation: global(fade-in) var(--motion-normal) var(--ease-out);
+}
+
+.overlay[data-state='closed'] {
+  animation: global(fade-out) var(--motion-fast) ease-in;
+}
+
+.content[data-state='open'] {
+  animation: global(pop-in) var(--motion-normal) var(--ease-out);
+}
+
+.content[data-state='closed'] {
+  animation: global(pop-out) var(--motion-fast) ease-in;
+}
+
 .title {
   margin: 0 0 var(--space-4);
   font-family: var(--font-display);
