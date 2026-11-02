@@ -13,7 +13,8 @@ export type Logger = {
 
 const text = (message: unknown) => (message instanceof Error ? (message.stack ?? message.message) : String(message))
 
-export function createFileLog(file: string, { maxBytes = 100 * 1024, now = () => new Date() } = {}): Logger {
+/** `debug: false` (the default) drops debug messages, for example the block lists of electron-updater. */
+export function createFileLog(file: string, { maxBytes = 100 * 1024, now = () => new Date(), debug = false } = {}): Logger {
   const write = (level: string, message: unknown) => {
     try {
       mkdirSync(dirname(file), { recursive: true })
@@ -38,6 +39,6 @@ export function createFileLog(file: string, { maxBytes = 100 * 1024, now = () =>
     info: (message) => write('INFO', message),
     warn: (message) => write('WARN', message),
     error: (message) => write('ERROR', message),
-    debug: (message) => write('DEBUG', message)
+    debug: (message) => debug && write('DEBUG', message)
   }
 }
