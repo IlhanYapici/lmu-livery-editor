@@ -64,6 +64,7 @@ What goes into the files that the game reads.
 - [0029](0029-branch-workflow.md) Branch workflow: GitHub Flow with a protected master
 - [0030](0030-distribution-and-updates.md) Distribution and updates: NSIS installer, GitHub releases, release-please, electron-updater
 - [0031](0031-exact-dependency-versions.md) Exact dependency versions, a minimum release age and Dependabot
+- [0032](0032-css-animations.md) UI animations in CSS, with no animation library
 
 ### User interface
 
