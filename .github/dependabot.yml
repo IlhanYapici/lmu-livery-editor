@@ -1,0 +1,33 @@
+# Upgrade proposals (ADR-0031). The versions are exact (package.json) and the actions are pinned to SHAs:
+# Dependabot proposes the upgrades as pull requests, which pass CI like any other change.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    # The same rule as min-release-age in .npmrc: only versions published more than 3 days ago.
+    # Security updates do not wait.
+    cooldown:
+      default-days: 3
+    # Minor and patch upgrades in one pull request; each major upgrade (Electron, React…) alone.
+    groups:
+      npm-minor-and-patch:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: build
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 3
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message:
+      prefix: ci
