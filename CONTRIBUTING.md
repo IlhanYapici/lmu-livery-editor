@@ -32,6 +32,14 @@ A ruleset that nobody can bypass, also not the administrators:
 - the CI check `windows` must pass, on a branch that is up to date;
 - linear history; no force push; no deletion.
 
+## Upgrades
+
+Dependencies have exact versions, and npm installs only versions published more than 3 days ago ([ADR-0031](docs/adr/0031-exact-dependency-versions.md)). Use Node 26 (`.node-version`).
+
+- Dependabot opens the upgrade pull requests every Monday. Read the release notes of major upgrades, wait for the green CI check, then merge.
+- To add or upgrade a package by hand, use `npm install <package>@<version>`: `.npmrc` writes the exact version.
+- If npm lists a package under "install scripts not yet covered by allowScripts", review its script, then run `npm approve-scripts <package>` or `npm deny-scripts <package>`.
+
 ## Releases
 
 Releases come from the commits on `master` ([ADR-0030](docs/adr/0030-distribution-and-updates.md)). Nobody writes a version number by hand.
