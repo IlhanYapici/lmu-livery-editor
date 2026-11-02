@@ -32,6 +32,14 @@ describe('createFileLog', () => {
     expect(content).toContain('old line 99\n2026-11-01T18:00:00.000Z WARN new\n')
   })
 
+  it('drops debug messages, unless debug is on', async () => {
+    const file = join(folder, 'updater.log')
+    const now = () => new Date('2026-11-01T18:00:00Z')
+    createFileLog(file, { now }).debug('block list')
+    createFileLog(file, { now, debug: true }).debug('kept')
+    expect(await readFile(file, 'utf8')).toBe('2026-11-01T18:00:00.000Z DEBUG kept\n')
+  })
+
   it('never throws when it cannot write', () => {
     const log = createFileLog(join(folder, 'missing\0name', 'updater.log'))
     expect(() => log.info('x')).not.toThrow()
