@@ -45,3 +45,17 @@
   border: 1px solid var(--color-border);
   font-size: 13px;
 }
+
+.tip {
+  transform-origin: var(--radix-tooltip-content-transform-origin);
+}
+
+.tip[data-state='open'],
+.tip[data-state='delayed-open'],
+.tip[data-state='instant-open'] {
+  animation: global(pop-in) var(--motion-fast) var(--ease-out);
+}
+
+.tip[data-state='closed'] {
+  animation: global(pop-out) var(--motion-fast) ease-in;
+}
