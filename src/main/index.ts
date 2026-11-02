@@ -245,6 +245,8 @@ function confirmClose(window: BrowserWindow, event: Electron.Event): void {
 function setUpUpdates(window: BrowserWindow, log: ReturnType<typeof createFileLog>): void {
   if (!app.isPackaged) return
   autoUpdater.logger = log
+  // The installer is the full NSIS file, not a web installer (electron-updater warns at each download).
+  autoUpdater.disableWebInstaller = true
   startUpdates(autoUpdater, {
     log: (message) => log.warn(message),
     onReady: (version) => {
