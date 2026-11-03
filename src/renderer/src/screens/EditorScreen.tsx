@@ -87,6 +87,7 @@ function EditorBody({
   const [zoom, setZoom] = useState(0)
   const [confirmGameExport, setConfirmGameExport] = useState(false)
   const [writing, setWriting] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [report, setReport] = useState<ExportReport | null>(null)
   const [showTemplateWarning, setShowTemplateWarning] = useState(templateChanged)
   /** Set when the user chose "Save" in the close dialog: the next close must not be blocked. */
@@ -115,15 +116,18 @@ function EditorBody({
     return () => clearTimeout(timer)
   }, [d.doc, selectedId, segments, updating, insertion, outline, clearExact, requestExact])
 
-  /** Saves the project. "Save as" (or the first save) asks for a file. Returns true when the file is written. */
+  /**
+   * Saves the project. "Save as" (or the first save) asks for a file. Returns true when the file is written.
+   * A save to the known file opens no dialog: the Save button then shows a spinner.
+   */
   const save = useCallback(
     async (asNew: boolean) => {
       const { doc, handle, markSaved } = documentStore.getState()
-      const result = await window.lmu.saveProject(
-        serializeProject(doc, variant.sizeBytes),
-        asNew ? null : handle,
-        `${car.name} ${variant.label}`
-      )
+      const quiet = !asNew && handle !== null
+      if (quiet) setSaving(true)
+      const result = await window.lmu
+        .saveProject(serializeProject(doc, variant.sizeBytes), asNew ? null : handle, `${car.name} ${variant.label}`)
+        .finally(() => quiet && setSaving(false))
       if (result.status === 'saved') markSaved(doc, result.handle, result.fileName)
       if (result.status === 'error') onError([result.message])
       return result.status === 'saved'
@@ -469,7 +473,7 @@ function EditorBody({
           {t('editor.mask')}
         </Toggle.Root>
         <span className={styles.spacer} />
-        <Button onClick={() => save(false)} title={t('editor.saveHint')}>
+        <Button onClick={() => save(false)} busy={saving} title={t('editor.saveHint')}>
           {t('editor.save')}
         </Button>
         <Button onClick={() => save(true)} title={t('editor.saveAsHint')}>
