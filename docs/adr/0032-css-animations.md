@@ -9,6 +9,7 @@ The UI gets short, quiet animations: popups and dialogs open with a fade and a s
 - **Tokens** in `tokens.css`: `--motion-fast` (120 ms, closing, menus, tooltips), `--motion-normal` (180 ms, dialogs) and `--ease-out`. With `prefers-reduced-motion: reduce`, both durations are 1 ms: no visible motion, but `animationend` still comes, so Radix still unmounts.
 - **Shared keyframes** in `global.css`: `fade-in`, `fade-out`, `pop-in`, `pop-out`, `slide-in`. They animate the `scale` and `translate` properties, not `transform`, so they do not replace the `translate(-50%, -50%)` that centres a dialog. A CSS module refers to them as `global(pop-in)`: a plain name gets the module hash and matches no keyframes.
 - **Menus and tooltips** scale from the side of their trigger: `transform-origin: var(--radix-select-content-transform-origin)` (or `--radix-tooltip-…`).
+- **Busy buttons:** `<Button busy>` shows a spinner in place of the label, with the same width, and is disabled (`aria-busy`). The change starts after 150 ms, so a fast action shows no flash. Use it only for work with no native file dialog: the renderer cannot tell the time in the dialog from the work time, and a spinner behind an open dialog looks wrong. Now: Save to the known file, and Open project after its dialog (file and image checks). Export keeps its full overlay. The spinner turns also with reduced motion: a stopped spinner looks frozen.
 
 ## Consequences
 
