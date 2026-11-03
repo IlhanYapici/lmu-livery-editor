@@ -47,3 +47,32 @@ test('closing the window with unsaved changes asks the main process; "Don\'t sav
   await electronApp.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].close())
   await closed
 })
+
+test('a save to the known file shows a spinner on the Save button until the file is written', async ({ app }) => {
+  const { page, folders } = app
+  await openFerrari(page)
+  await page.keyboard.press('r')
+  await dragOnCanvas(page, [0.45, 0.35], [0.7, 0.55])
+  await app.answerSaveDialogs(join(folders.root, 'Slow.lmulivery'))
+  await page.keyboard.press('Control+s')
+  await expect(page.locator('header')).toContainText('Slow.lmulivery')
+
+  // The next save waits until the test releases it.
+  await app.electronApp.evaluate(({ ipcMain }) => {
+    ipcMain.removeHandler('project:save')
+    ipcMain.handle(
+      'project:save',
+      (_event, _text, handle: string) =>
+        new Promise((resolve) => {
+          ;(globalThis as { releaseSave?: () => void }).releaseSave = () => resolve({ status: 'saved', handle, fileName: 'Slow.lmulivery' })
+        })
+    )
+  })
+  const save = page.getByRole('button', { name: 'Save', exact: true })
+  await save.click()
+  await expect(save).toHaveAttribute('aria-busy', 'true')
+  await expect(save).toBeDisabled()
+  await app.electronApp.evaluate(() => (globalThis as { releaseSave?: () => void }).releaseSave?.())
+  await expect(save).not.toHaveAttribute('aria-busy')
+  await expect(save).toBeEnabled()
+})

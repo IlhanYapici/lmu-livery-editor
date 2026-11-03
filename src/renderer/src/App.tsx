@@ -44,6 +44,7 @@ export function App() {
   const [title, setTitle] = useState('')
   const [message, setMessage] = useState<Message | null>(null)
   /** The action that waits for the answer to "Save changes?". */
+  const [opening, setOpening] = useState(false)
   const [pendingLeave, setPendingLeave] = useState<(() => void) | null>(null)
   const guard = useRef<EditorGuard | null>(null)
   const showSaveError = useCallback((lines: string[]) => setMessage({ title: i18n.t('project.cannotSave'), lines }), [])
@@ -73,37 +74,43 @@ export function App() {
     const result = await window.lmu.openProject()
     if (result.status === 'cancelled') return
     if (result.status === 'error') return setMessage({ title: t('project.cannotOpen'), lines: [result.message] })
-    const parsed = parseProject(result.text)
-    if (!parsed.ok)
-      return setMessage({
-        title: t('project.cannotOpen'),
-        lines: [t('project.invalid', { file: result.fileName }), ...parsed.errors.slice(0, 8).map(projectErrorText)]
-      })
+    // The file dialog is closed: the button shows a spinner while the app checks the file and its images.
+    setOpening(true)
+    try {
+      const parsed = parseProject(result.text)
+      if (!parsed.ok)
+        return setMessage({
+          title: t('project.cannotOpen'),
+          lines: [t('project.invalid', { file: result.fileName }), ...parsed.errors.slice(0, 8).map(projectErrorText)]
+        })
 
-    const assetErrors = await verifyAssets(parsed.project.document)
-    if (assetErrors.length)
-      return setMessage({
-        title: t('project.cannotOpen'),
-        lines: [t('project.invalid', { file: result.fileName }), ...assetErrors.slice(0, 8).map(projectErrorText)]
-      })
+      const assetErrors = await verifyAssets(parsed.project.document)
+      if (assetErrors.length)
+        return setMessage({
+          title: t('project.cannotOpen'),
+          lines: [t('project.invalid', { file: result.fileName }), ...assetErrors.slice(0, 8).map(projectErrorText)]
+        })
 
-    const { template, document } = parsed.project
-    for (const category of catalogue)
-      for (const car of category.cars)
-        for (const variant of car.variants)
-          if (variant.id === template.id) {
-            setSelection({ categoryId: category.id, carId: car.id, variantId: variant.id })
-            setEditing({
-              key: Date.now(),
-              project: { doc: document, handle: result.handle, fileName: result.fileName },
-              templateChanged: variant.sizeBytes !== template.sizeBytes
-            })
-            return
-          }
-    setMessage({
-      title: t('project.templateMissingTitle'),
-      lines: [t('project.templateMissing', { file: result.fileName, template: template.id }), t('project.templateMissingHelp')]
-    })
+      const { template, document } = parsed.project
+      for (const category of catalogue)
+        for (const car of category.cars)
+          for (const variant of car.variants)
+            if (variant.id === template.id) {
+              setSelection({ categoryId: category.id, carId: car.id, variantId: variant.id })
+              setEditing({
+                key: Date.now(),
+                project: { doc: document, handle: result.handle, fileName: result.fileName },
+                templateChanged: variant.sizeBytes !== template.sizeBytes
+              })
+              return
+            }
+      setMessage({
+        title: t('project.templateMissingTitle'),
+        lines: [t('project.templateMissing', { file: result.fileName, template: template.id }), t('project.templateMissingHelp')]
+      })
+    } finally {
+      setOpening(false)
+    }
   }, [catalogue, t])
 
   const openWithGuard = useCallback(() => leaveEditor(() => void openProject()), [leaveEditor, openProject])
@@ -139,7 +146,7 @@ export function App() {
 
   const right = (
     <>
-      <Button onClick={openWithGuard} disabled={!catalogue} title={t('app.openProjectHint')}>
+      <Button onClick={openWithGuard} disabled={!catalogue} busy={opening} title={t('app.openProjectHint')}>
         {t('app.openProject')}
       </Button>
       <GameFolderDialog location={location} onChoose={choose} />
