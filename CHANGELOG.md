@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0](https://github.com/IlhanYapici/lmu-livery-editor/compare/v0.2.1...v0.3.0) (2026-11-03)
+
+
+### Features
+
+* **ui:** fade and scale animations for dialogs, menus, tooltips and the update banner ([37a89b3](https://github.com/IlhanYapici/lmu-livery-editor/commit/37a89b3e518407cd93832f1b33f530d56826ce7c))
+* **ui:** spinner on Save and Open project while the work runs ([c64ccd5](https://github.com/IlhanYapici/lmu-livery-editor/commit/c64ccd50777e35437cebd1260499ea66155f7bf8))
+
+
+### Bug Fixes
+
+* **main:** less noise in the updater log ([798822c](https://github.com/IlhanYapici/lmu-livery-editor/commit/798822cf9e299e3fd682be8ce2c82f1b1bb9680d))
+
 ## [0.2.1](https://github.com/IlhanYapici/lmu-livery-editor/compare/v0.2.0...v0.2.1) (2026-11-01)
 
 
