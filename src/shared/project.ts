@@ -8,7 +8,7 @@ z.config({ jitless: true })
 // document types and of the validation of files from outside the app (ADR-0021).
 
 export const PROJECT_FORMAT = 'lmu-livery'
-export const PROJECT_VERSION = 2
+export const PROJECT_VERSION = 3
 export const PROJECT_EXTENSION = 'lmulivery'
 /** The main process refuses larger files before it reads them. Images are embedded (ADR-0025). */
 export const MAX_PROJECT_BYTES = 100 * 1024 * 1024
@@ -59,10 +59,26 @@ const layerBase = {
 
 const assetIdSchema = z.string().regex(/^[0-9a-f]{64}$/, VALIDATION.assetId)
 
-const fillSchema = z.object({ ...layerBase, color, kind: z.literal('fill') })
+export const MAX_GRADIENT_STOPS = 8
+
+/**
+ * A gradient over the layer's own box (ADR-0034). Linear: `angle` in degrees, 0 = left to right, 90 = top to
+ * bottom. Radial: from the centre of the box to its corners. `color` of the layer stays the solid colour.
+ */
+const gradientSchema = z.object({
+  type: z.enum(['linear', 'radial']),
+  angle: z.number().min(-360).max(360),
+  stops: z
+    .array(z.object({ offset: z.number().min(0).max(1), color, alpha: z.number().min(0).max(1) }))
+    .min(2)
+    .max(MAX_GRADIENT_STOPS)
+})
+
+const fillSchema = z.object({ ...layerBase, color, gradient: gradientSchema.nullable(), kind: z.literal('fill') })
 const rectSchema = z.object({
   ...layerBase,
   color,
+  gradient: gradientSchema.nullable(),
   kind: z.literal('rect'),
   width: z.number().positive().max(100_000),
   height: z.number().positive().max(100_000),
@@ -71,6 +87,7 @@ const rectSchema = z.object({
 const polygonSchema = z.object({
   ...layerBase,
   color,
+  gradient: gradientSchema.nullable(),
   kind: z.literal('polygon'),
   points: z
     .array(coordinate)
@@ -115,7 +132,7 @@ export const assetSchema = z.object({
 
 export const documentSchema = z
   .object({
-    version: z.literal(2),
+    version: z.literal(3),
     templateId: z.string().min(1).max(500),
     insertion: z.number().int().min(0).max(10_000).nullable(),
     templateVisibility: z.record(z.string().regex(/^\d+(\/\d+)*$/, VALIDATION.layerPath), z.boolean()),
@@ -141,6 +158,8 @@ export const projectSchema = z.object({
 })
 
 export type Transform = z.infer<typeof transformSchema>
+export type Gradient = z.infer<typeof gradientSchema>
+export type GradientStop = Gradient['stops'][number]
 export type FillLayer = z.infer<typeof fillSchema>
 export type RectLayer = z.infer<typeof rectSchema>
 export type PolygonLayer = z.infer<typeof polygonSchema>
@@ -202,16 +221,29 @@ export function parseProject(text: string): ParseResult {
 }
 
 /**
- * Brings an older file to the current format, in place. The schema checks the result, so this code only
- * changes what it recognises. Version 1 → 2: the document gets an empty `assets` table (no images then).
+ * Brings an older file to the current format, in place, one version at a time. The schema checks the result,
+ * so this code only changes what it recognises.
+ * - 1 → 2: the document gets an empty `assets` table (no images then).
+ * - 2 → 3: fill, rectangle and polygon layers get `gradient: null` (solid colour).
  */
 function migrate(json: Record<string, unknown>): void {
-  if (json.version !== 1) return
-  json.version = 2
-  const document = json.document as Record<string, unknown> | null
-  if (typeof document === 'object' && document !== null && document.version === 1) {
-    document.version = 2
-    document.assets ??= {}
+  const document = (typeof json.document === 'object' && json.document !== null ? json.document : {}) as Record<string, unknown>
+  if (json.version === 1) {
+    json.version = 2
+    if (document.version === 1) {
+      document.version = 2
+      document.assets ??= {}
+    }
+  }
+  if (json.version === 2) {
+    json.version = 3
+    if (document.version === 2) {
+      document.version = 3
+      if (Array.isArray(document.layers))
+        for (const layer of document.layers as Record<string, unknown>[])
+          if (typeof layer === 'object' && layer !== null && ['fill', 'rect', 'polygon'].includes(layer.kind as string))
+            layer.gradient ??= null
+    }
   }
 }
 

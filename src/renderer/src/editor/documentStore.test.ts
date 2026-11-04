@@ -107,7 +107,7 @@ describe('documentStore', () => {
   })
 
   it('starts from an opened project without unsaved changes', () => {
-    const doc = { version: 2 as const, templateId: 't', insertion: 3, templateVisibility: {}, layers: [], assets: {} }
+    const doc = { version: 3 as const, templateId: 't', insertion: 3, templateVisibility: {}, layers: [], assets: {} }
     const store = createDocumentStore('t', { doc, handle: 'h', fileName: 'a.lmulivery' })
     expect(store.getState().doc).toBe(doc)
     expect(hasUnsavedChanges(store.getState())).toBe(false)

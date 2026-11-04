@@ -2,6 +2,7 @@ import Konva from 'konva'
 import { REGIONS } from '../../../shared/psd/regions'
 import { loadAssetImage, regionShape } from './assets'
 import type { LiveryDocument, UserLayer } from './document'
+import { paintProps } from './paint'
 
 // Draws user layers at template size on a hidden stage, independent of the editor camera.
 // Used by the exact preview and by the export (ADR-0022, ADR-0023).
@@ -23,18 +24,19 @@ function layerNode(
   layer: UserLayer,
   width: number,
   height: number,
-  color: string,
+  regionColor: string | undefined,
   opacity: number,
   image?: CanvasImageSource
 ): Konva.Shape | null {
   const common = { ...layer.transform, opacity, listening: false }
+  const paint = paintProps(layer, width, height, regionColor)
   switch (layer.kind) {
     case 'fill':
-      return new Konva.Rect({ ...common, x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, width, height, fill: color })
+      return new Konva.Rect({ ...common, ...paint, x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1, width, height })
     case 'rect':
-      return new Konva.Rect({ ...common, width: layer.width, height: layer.height, cornerRadius: layer.cornerRadius, fill: color })
+      return new Konva.Rect({ ...common, ...paint, width: layer.width, height: layer.height, cornerRadius: layer.cornerRadius })
     case 'polygon':
-      return new Konva.Line({ ...common, points: layer.points, closed: true, fill: color })
+      return new Konva.Line({ ...common, ...paint, points: layer.points, closed: true })
     case 'image':
       return image ? new Konva.Image({ ...common, image, width: layer.width, height: layer.height }) : null
     case 'text':
@@ -43,7 +45,7 @@ function layerNode(
         text: layer.text,
         fontFamily: layer.fontFamily,
         fontSize: layer.fontSize,
-        fill: color,
+        fill: paint.fill,
         stroke: layer.outline?.color,
         strokeWidth: layer.outline?.width ?? 0,
         fillAfterStrokeEnabled: true
@@ -74,7 +76,7 @@ export async function rasterizeSkin(
   return draw(
     layers
       .filter((l) => l.visible)
-      .map((l) => layerNode(l, width, height, 'color' in l ? l.color : '', l.opacity, l.kind === 'image' ? images[l.assetId] : undefined)),
+      .map((l) => layerNode(l, width, height, undefined, l.opacity, l.kind === 'image' ? images[l.assetId] : undefined)),
     width,
     height
   )
