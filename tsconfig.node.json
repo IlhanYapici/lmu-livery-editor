@@ -7,7 +7,8 @@
     "strict": true,
     "skipLibCheck": true,
     "types": ["node"],
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true
   },
   "include": ["electron.vite.config.mts", "vitest.config.mts", "scripts/**/*.ts", "tests/**/*.ts", "src/**/*", "playwright.config.ts"],
   "exclude": ["src/renderer/**"]
