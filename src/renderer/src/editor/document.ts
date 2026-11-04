@@ -15,10 +15,10 @@ import { i18n } from '../i18n'
 // Coordinates are template pixels (0..4096). Shapes keep their scale in `transform` (no baking).
 
 export { FONTS } from '../../../shared/project'
-export type { Asset, ImageLayer, LayerKind, LiveryDocument, Transform, UserLayer } from '../../../shared/project'
+export type { Asset, Gradient, GradientStop, ImageLayer, LayerKind, LiveryDocument, Transform, UserLayer } from '../../../shared/project'
 
 export function emptyDocument(templateId: string): LiveryDocument {
-  return { version: 2, templateId, insertion: null, templateVisibility: {}, layers: [], assets: {} }
+  return { version: 3, templateId, insertion: null, templateVisibility: {}, layers: [], assets: {} }
 }
 
 let counter = 0
@@ -41,11 +41,11 @@ export function createLayer(kind: LayerKind, existing: UserLayer[], props: Parti
   }
   switch (kind) {
     case 'fill':
-      return { ...base, kind, color: '#1d1f24', ...props } as FillLayer
+      return { ...base, kind, color: '#1d1f24', gradient: null, ...props } as FillLayer
     case 'rect':
-      return { ...base, kind, color: '#d7262e', width: 400, height: 200, cornerRadius: 0, ...props } as RectLayer
+      return { ...base, kind, color: '#d7262e', gradient: null, width: 400, height: 200, cornerRadius: 0, ...props } as RectLayer
     case 'polygon':
-      return { ...base, kind, color: '#d7262e', points: [], ...props } as PolygonLayer
+      return { ...base, kind, color: '#d7262e', gradient: null, points: [], ...props } as PolygonLayer
     case 'text':
       return { ...base, kind, color: '#ffffff', text: '24', fontFamily: 'Bebas Neue', fontSize: 240, outline: null, ...props } as TextLayer
     case 'image':

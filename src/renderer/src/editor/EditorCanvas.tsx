@@ -5,6 +5,7 @@ import { REGIONS } from '../../../shared/psd/regions'
 import { loadAssetImage, regionShape } from './assets'
 import { FONTS, type LiveryDocument, type UserLayer } from './document'
 import type { DocumentState } from './documentStore'
+import { paintProps } from './paint'
 import type { TemplateState } from './templateStore'
 import styles from './EditorCanvas.module.css'
 
@@ -258,7 +259,7 @@ export function EditorCanvas({
         layer={layer}
         width={width}
         height={height}
-        color={regionColors ? REGION_RGB[layer.region] : 'color' in layer ? layer.color : ''}
+        regionColor={regionColors ? REGION_RGB[layer.region] : undefined}
         image={
           layer.kind === 'image' && assetImages[layer.assetId]
             ? regionColors
@@ -366,14 +367,15 @@ type NodeProps = {
   layer: UserLayer
   width: number
   height: number
-  color: string
+  /** In the region view: the region colour, in place of the layer paint. */
+  regionColor?: string
   /** For image layers: the decoded image, or its region shape in the region view. */
   image?: CanvasImageSource
   interactive: boolean
   document: DocumentProps
 }
 
-function UserLayerNode({ layer, width, height, color, image, interactive, document: doc }: NodeProps) {
+function UserLayerNode({ layer, width, height, regionColor, image, interactive, document: doc }: NodeProps) {
   const movable = interactive && !layer.locked && layer.kind !== 'fill'
   const common = {
     id: layer.id,
@@ -394,13 +396,14 @@ function UserLayerNode({ layer, width, height, color, image, interactive, docume
       doc.endGesture()
     }
   }
+  const paint = paintProps(layer, width, height, regionColor)
   switch (layer.kind) {
     case 'fill':
-      return <Rect {...common} x={0} y={0} rotation={0} scaleX={1} scaleY={1} width={width} height={height} fill={color} />
+      return <Rect {...common} {...paint} x={0} y={0} rotation={0} scaleX={1} scaleY={1} width={width} height={height} />
     case 'rect':
-      return <Rect {...common} width={layer.width} height={layer.height} cornerRadius={layer.cornerRadius} fill={color} />
+      return <Rect {...common} {...paint} width={layer.width} height={layer.height} cornerRadius={layer.cornerRadius} />
     case 'polygon':
-      return <Line {...common} points={layer.points} closed fill={color} />
+      return <Line {...common} {...paint} points={layer.points} closed />
     case 'image':
       return image ? <KonvaImage {...common} image={image} width={layer.width} height={layer.height} /> : null
     case 'text':
@@ -410,7 +413,7 @@ function UserLayerNode({ layer, width, height, color, image, interactive, docume
           text={layer.text}
           fontFamily={layer.fontFamily}
           fontSize={layer.fontSize}
-          fill={color}
+          fill={paint.fill}
           stroke={layer.outline?.color}
           strokeWidth={layer.outline?.width ?? 0}
           fillAfterStrokeEnabled

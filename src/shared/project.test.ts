@@ -16,14 +16,30 @@ const base = { visible: true, locked: false, opacity: 0.5, region: 'base' as con
 const PNG_BYTES = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3])
 
 const doc: LiveryDocument = {
-  version: 2,
+  version: 3,
   templateId: TEMPLATE,
   insertion: 2,
   templateVisibility: { '2/1': true, '5': false },
   layers: [
-    { ...base, id: 'a', name: 'Fill 1', kind: 'fill' },
-    { ...base, id: 'b', name: 'Rectangle 1', kind: 'rect', width: 400, height: 200, cornerRadius: 8 },
-    { ...base, id: 'c', name: 'Polygon 1', kind: 'polygon', points: [0, 0, 100, 0, 50, 80], region: 'option1' },
+    { ...base, id: 'a', name: 'Fill 1', kind: 'fill', gradient: null },
+    {
+      ...base,
+      id: 'b',
+      name: 'Rectangle 1',
+      kind: 'rect',
+      gradient: {
+        type: 'linear',
+        angle: 30,
+        stops: [
+          { offset: 0, color: '#ff0000', alpha: 1 },
+          { offset: 1, color: '#0000ff', alpha: 0 }
+        ]
+      },
+      width: 400,
+      height: 200,
+      cornerRadius: 8
+    },
+    { ...base, id: 'c', name: 'Polygon 1', kind: 'polygon', gradient: null, points: [0, 0, 100, 0, 50, 80], region: 'option1' },
     {
       ...base,
       id: 'd',
@@ -74,7 +90,7 @@ describe('project files', () => {
     expect(errorsOf('not json')).toEqual(['notJson'])
     expect(errorsOf('{"format":"other"}')).toEqual(['notProject'])
     expect(errorsOf('[]')).toEqual(['notProject'])
-    expect(errorsOf(fileWith((p) => (p.version = 3)))).toEqual(['newerVersion 3'])
+    expect(errorsOf(fileWith((p) => (p.version = 4)))).toEqual(['newerVersion 4'])
   })
 
   it('gives the location of each error', () => {
@@ -98,7 +114,13 @@ describe('project files', () => {
     // JSON has no Infinity; 1e999 parses to Infinity.
     expect(errorsOf(fileWith((p) => (p.document.layers[1].width = 'X')).replace('"X"', '1e999')).length).toBeGreaterThan(0)
     expect(errorsOf(fileWith((p) => (p.document.layers[1].id = 'a')))).toContain('document.layers: validation.uniqueIds')
-    const many: UserLayer[] = Array.from({ length: MAX_LAYERS + 1 }, (_, i) => ({ ...base, id: `l${i}`, name: 'F', kind: 'fill' }))
+    const many: UserLayer[] = Array.from({ length: MAX_LAYERS + 1 }, (_, i) => ({
+      ...base,
+      id: `l${i}`,
+      name: 'F',
+      kind: 'fill',
+      gradient: null
+    }))
     expect(errorsOf(fileWith((p) => (p.document.layers = many))).length).toBeGreaterThan(0)
     expect(errorsOf(fileWith((p) => (p.template.id = 'Template_GT3_Other.psd')))).toEqual(['templateMismatch'])
   })
@@ -110,8 +132,34 @@ describe('project files', () => {
       delete p.document.assets
     })
     const result = parseProject(v1)
-    expect(result.ok && result.project.version).toBe(2)
+    expect(result.ok && result.project.version).toBe(3)
     expect(result.ok && result.project.document.assets).toEqual({})
+  })
+
+  it('opens version 2 files: fills, rectangles and polygons get no gradient', () => {
+    const v2 = fileWith((p) => {
+      p.version = 2
+      p.document.version = 2
+      for (const layer of p.document.layers) delete layer.gradient
+    })
+    const result = parseProject(v2)
+    expect(result.ok && result.project.document.version).toBe(3)
+    expect(result.ok && result.project.document.layers.map((l) => ('gradient' in l ? l.gradient : 'none'))).toEqual([
+      null,
+      null,
+      null,
+      'none'
+    ])
+  })
+
+  it('refuses a bad gradient', () => {
+    const gradient = (change: (g: any) => void) => errorsOf(fileWith((p) => change(p.document.layers[1].gradient)))
+    expect(gradient((g) => (g.type = 'conic')).some((e) => e.startsWith('document.layers[1].gradient.type'))).toBe(true)
+    expect(gradient((g) => (g.stops = g.stops.slice(0, 1))).some((e) => e.startsWith('document.layers[1].gradient.stops'))).toBe(true)
+    expect(gradient((g) => (g.stops = Array(9).fill(g.stops[0]))).some((e) => e.startsWith('document.layers[1].gradient.stops'))).toBe(true)
+    expect(gradient((g) => (g.stops[0].offset = 1.5)).some((e) => e.startsWith('document.layers[1].gradient.stops[0].offset'))).toBe(true)
+    expect(gradient((g) => (g.stops[1].alpha = -1)).some((e) => e.startsWith('document.layers[1].gradient.stops[1].alpha'))).toBe(true)
+    expect(gradient((g) => (g.stops[1].color = 'blue')).some((e) => e.includes('validation.colour'))).toBe(true)
   })
 })
 
