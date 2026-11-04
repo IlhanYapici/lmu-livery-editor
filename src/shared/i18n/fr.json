@@ -37,6 +37,12 @@
     "licence": "Logiciel libre sous licence MIT.",
     "disclaimer": "Cette application n'est ni créée ni approuvée par Motorsport Games, Studio 397 ou l'ACO. Le Mans Ultimate est une marque de ses propriétaires."
   },
+  "whatsNew": {
+    "title": "Nouveautés",
+    "button": "Nouveautés",
+    "new": "Nouveau",
+    "fixed": "Corrigé"
+  },
   "update": {
     "ready": "La version {{version}} est prête à être installée.",
     "restart": "Redémarrer maintenant",

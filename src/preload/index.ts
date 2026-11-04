@@ -28,7 +28,9 @@ const api: LmuApi = {
       ipcRenderer.removeListener(IPC.updateReady, listener)
     }
   },
-  installUpdate: () => ipcRenderer.send(IPC.installUpdate)
+  installUpdate: () => ipcRenderer.send(IPC.installUpdate),
+  getWhatsNewSeen: (latest) => ipcRenderer.invoke(IPC.getWhatsNewSeen, latest),
+  setWhatsNewSeen: (id) => ipcRenderer.invoke(IPC.setWhatsNewSeen, id)
 }
 
 contextBridge.exposeInMainWorld('lmu', api)

@@ -10,7 +10,15 @@ import { writeTemplates } from '../fixtures/templates'
 
 export type Folders = { root: string; game: string; userData: string; liveries: string }
 
-type Options = { gameKnown: boolean; language: 'en' | 'fr' }
+type Options = {
+  gameKnown: boolean
+  language: 'en' | 'fr'
+  /**
+   * The saved "What's new" id. Default: 9999, every entry seen (no dialog). null: no value, as after an
+   * update from a version before "What's new". 'new-install': no settings file at all.
+   */
+  whatsNewSeen?: number | null | 'new-install'
+}
 
 export type AppHandle = {
   electronApp: ElectronApplication
@@ -67,8 +75,13 @@ export const test = base.extend<{ options: Options; app: AppHandle }>({
     await writeTemplates(join(game, 'support', 'LiveryTemplates'))
     await mkdir(join(game, 'UserData'), { recursive: true })
     await mkdir(folders.userData, { recursive: true })
-    const settings = { language: options.language, ...(options.gameKnown ? { gameDir: game } : {}) }
-    await writeFile(join(folders.userData, 'settings.json'), JSON.stringify(settings))
+    const seen = options.whatsNewSeen === undefined ? 9999 : options.whatsNewSeen
+    const settings = {
+      language: options.language,
+      ...(options.gameKnown ? { gameDir: game } : {}),
+      ...(typeof seen === 'number' ? { whatsNewSeen: seen } : {})
+    }
+    if (seen !== 'new-install') await writeFile(join(folders.userData, 'settings.json'), JSON.stringify(settings))
 
     let current = await launch(folders)
     const handle: AppHandle = {

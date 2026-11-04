@@ -1,0 +1,131 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgb(0 0 0 / 60%);
+}
+
+.content {
+  position: fixed;
+  z-index: 41;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  width: min(720px, 90vw);
+  max-height: 85vh;
+  transform: translate(-50%, -50%);
+  padding: var(--space-6);
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+}
+
+.overlay[data-state='open'] {
+  animation: global(fade-in) var(--motion-normal) var(--ease-out);
+}
+
+.overlay[data-state='closed'] {
+  animation: global(fade-out) var(--motion-fast) ease-in;
+}
+
+.content[data-state='open'] {
+  animation: global(pop-in) var(--motion-normal) var(--ease-out);
+}
+
+.content[data-state='closed'] {
+  animation: global(pop-out) var(--motion-fast) ease-in;
+}
+
+.title {
+  margin: 0 0 var(--space-4);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 36px;
+}
+
+.entries {
+  overflow-y: auto;
+  padding-right: var(--space-3);
+  user-select: text;
+}
+
+/* The same thin bar as the template tiles (SelectScreen.module.css). */
+.entries::-webkit-scrollbar {
+  width: 8px;
+}
+
+.entries::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.entries::-webkit-scrollbar-thumb {
+  background: var(--color-text-muted);
+  border-radius: 4px;
+}
+
+.entries::-webkit-scrollbar-button {
+  display: none;
+}
+
+.entry {
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.badge {
+  display: inline-block;
+  padding: 0 var(--space-2);
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+}
+
+.new {
+  background: var(--class-gt3);
+}
+
+.fixed {
+  background: var(--color-navy-2);
+}
+
+.text {
+  color: var(--color-text-soft);
+  line-height: 1.5;
+}
+
+.text h2 {
+  margin: var(--space-2) 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 26px;
+  color: var(--color-text);
+}
+
+.text h3 {
+  margin: var(--space-3) 0 var(--space-1);
+  font-size: 16px;
+  color: var(--color-text);
+}
+
+.text p,
+.text ul,
+.text ol {
+  margin: 0 0 var(--space-2);
+}
+
+.text img {
+  display: block;
+  max-width: 100%;
+  margin: var(--space-3) 0;
+  border: 1px solid var(--color-border);
+}
+
+.text a {
+  color: var(--color-focus);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-5);
+}

@@ -7,10 +7,12 @@ import styles from './GameFolderDialog.module.css'
 type Props = {
   location: Extract<GameLocation, { status: 'found' }>
   onChoose: () => void
+  /** Shows the full "What's new" history. */
+  onWhatsNew: () => void
 }
 
 /** Shows the game folder in use, and lets the user select another one. Also shows the app version (About). */
-export function GameFolderDialog({ location, onChoose }: Props) {
+export function GameFolderDialog({ location, onChoose, onWhatsNew }: Props) {
   const { t } = useTranslation()
   return (
     <Dialog.Root>
@@ -36,6 +38,9 @@ export function GameFolderDialog({ location, onChoose }: Props) {
             <p>{t('about.version', { version: __APP_VERSION__ })}</p>
             <p>{t('about.licence')}</p>
             <p className={styles.disclaimer}>{t('about.disclaimer')}</p>
+            <Dialog.Close asChild>
+              <Button onClick={onWhatsNew}>{t('whatsNew.button')}</Button>
+            </Dialog.Close>
           </section>
           <div className={styles.actions}>
             <Button onClick={onChoose}>{t('gameFolder.selectAnother')}</Button>
