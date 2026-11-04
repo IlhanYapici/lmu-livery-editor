@@ -32,6 +32,32 @@ A ruleset that nobody can bypass, also not the administrators:
 - the CI check `windows` must pass, on a branch that is up to date;
 - linear history; no force push; no deletion.
 
+## "What's new" entries
+
+A change that users can see (`feat`, or a `fix` that they notice) adds an entry in the same pull request ([ADR-0033](docs/adr/0033-whats-new.md)). The app shows it once after the update that brings it.
+
+1. Make a folder `src/renderer/whats-new/NNNN-name`, with the next number (`0004-layer-copy-paste`).
+2. Write `en.md` and `fr.md`:
+
+   ```markdown
+   ---
+   kind: new
+   ---
+
+   ## Copy and paste layers
+
+   Select a layer, then press **Ctrl+C** and **Ctrl+V**.
+
+   ![The copied layer in the layer list](layers.webp)
+   ```
+
+   `kind` is `new` or `fixed`. Start with a `##` title. No raw HTML; links start with `https://`.
+
+3. Put the images in the same folder: WebP or PNG, 300 KB or less.
+4. `npm run check` tests the folder.
+
+Internal changes (build, CI, refactoring, log messages) add no entry.
+
 ## Upgrades
 
 Dependencies have exact versions, and npm installs only versions published more than 3 days ago ([ADR-0031](docs/adr/0031-exact-dependency-versions.md)). Use Node 26 (`.node-version`).

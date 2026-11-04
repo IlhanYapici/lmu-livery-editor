@@ -65,6 +65,7 @@ What goes into the files that the game reads.
 - [0030](0030-distribution-and-updates.md) Distribution and updates: NSIS installer, GitHub releases, release-please, electron-updater
 - [0031](0031-exact-dependency-versions.md) Exact dependency versions, a minimum release age and Dependabot
 - [0032](0032-css-animations.md) UI animations in CSS, with no animation library
+- [0033](0033-whats-new.md) "What's new" after an update
 
 ### User interface
 
