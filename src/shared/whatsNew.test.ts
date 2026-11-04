@@ -31,6 +31,14 @@ describe('whats-new entry files', () => {
     ])
   })
 
+  it('accepts Windows paths', () => {
+    const entries = buildEntries(
+      { 'C:\\app\\whats-new\\0001-a\\en.md': md('new'), 'C:\\app\\whats-new\\0001-a\\fr.md': md('new') },
+      { 'C:\\app\\whats-new\\0001-a\\shot.png': 'shot.png' }
+    )
+    expect(entries.map((e) => [e.folder, e.images])).toEqual([['0001-a', { 'shot.png': 'shot.png' }]])
+  })
+
   it('refuses a bad folder name, id 0, a duplicate id, a missing language or two kinds', () => {
     expect(() => buildEntries(both('1-short'), {})).toThrow(/NNNN-name/)
     expect(() => buildEntries(both('0001-Upper'), {})).toThrow(/NNNN-name/)

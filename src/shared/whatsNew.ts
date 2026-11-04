@@ -47,13 +47,13 @@ export function parseEntryFile(text: string): { kind: EntryKind; markdown: strin
 
 /**
  * Makes the entries from the bundled files. Keys are paths that end with `<folder>/<file>` (as from
- * import.meta.glob). Newest entry first. Throws on a bad folder name, a duplicate id, a missing language
+ * import.meta.glob; `\` also works, for Windows paths in the tests). Newest entry first. Throws on a bad folder name, a duplicate id, a missing language
  * or two languages with a different kind.
  */
 export function buildEntries(texts: Record<string, string>, imageUrls: Record<string, string>): Entry[] {
   const folders = new Map<string, { files: Map<string, string>; images: Record<string, string> }>()
   const folderOf = (path: string) => {
-    const [folder, file] = path.split('/').slice(-2)
+    const [folder, file] = path.split(/[\\/]/).slice(-2)
     if (!folders.has(folder)) folders.set(folder, { files: new Map(), images: {} })
     return { entry: folders.get(folder)!, file }
   }
