@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/IlhanYapici/lmu-livery-editor/compare/v0.3.0...v0.4.0) (2026-11-04)
+
+
+### Features
+
+* **ui:** What's new window after an update, and its history in About ([cf0186d](https://github.com/IlhanYapici/lmu-livery-editor/commit/cf0186d22e5cfd19479685efa7d0fd6eb68e3191))
+
 ## [0.3.0](https://github.com/IlhanYapici/lmu-livery-editor/compare/v0.2.1...v0.3.0) (2026-11-03)
 
 
