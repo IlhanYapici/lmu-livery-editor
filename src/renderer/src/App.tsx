@@ -7,11 +7,14 @@ import { ConfirmDialog } from './components/ConfirmDialog'
 import { GameFolderDialog } from './components/GameFolderDialog'
 import { TopBar } from './components/TopBar'
 import { UpdateBanner } from './components/UpdateBanner'
+import { WhatsNewDialog } from './components/WhatsNewDialog'
 import type { InitialProject } from './editor/documentStore'
 import { EditorScreen, type EditorGuard } from './screens/EditorScreen'
 import { LocateScreen } from './screens/LocateScreen'
 import { SelectScreen, type Selection } from './screens/SelectScreen'
 import { i18n } from './i18n'
+import { ENTRIES } from './whatsNew/content'
+import { latestId, unseen, type Entry } from '../../shared/whatsNew'
 import styles from './App.module.css'
 
 /** A project error in the UI language. Custom schema messages are translation keys. */
@@ -45,6 +48,8 @@ export function App() {
   const [message, setMessage] = useState<Message | null>(null)
   /** The action that waits for the answer to "Save changes?". */
   const [opening, setOpening] = useState(false)
+  /** The "What's new" entries on screen; null: closed. */
+  const [whatsNew, setWhatsNew] = useState<Entry[] | null>(null)
   const [pendingLeave, setPendingLeave] = useState<(() => void) | null>(null)
   const guard = useRef<EditorGuard | null>(null)
   const showSaveError = useCallback((lines: string[]) => setMessage({ title: i18n.t('project.cannotSave'), lines }), [])
@@ -52,6 +57,22 @@ export function App() {
   useEffect(() => {
     window.lmu.locateGame().then(setLocation)
   }, [])
+
+  // After the first answer of locateGame (it can save the settings), so the two saves never overlap.
+  const located = location !== null
+  useEffect(() => {
+    if (!located) return
+    window.lmu.getWhatsNewSeen(latestId(ENTRIES)).then((seen) => {
+      const entries = unseen(ENTRIES, seen)
+      if (entries.length) setWhatsNew(entries)
+    })
+  }, [located])
+
+  const closeWhatsNew = useCallback(() => {
+    setWhatsNew(null)
+    void window.lmu.setWhatsNewSeen(latestId(ENTRIES))
+  }, [])
+  const whatsNewDialog = <WhatsNewDialog entries={whatsNew} onClose={closeWhatsNew} />
 
   useEffect(() => {
     if (location?.status !== 'found') return
@@ -140,6 +161,7 @@ export function App() {
       <div className={styles.app}>
         <UpdateBanner />
         <LocateScreen location={location?.status === 'not-found' || location?.status === 'invalid' ? location : null} onChoose={choose} />
+        {whatsNewDialog}
       </div>
     )
   }
@@ -149,7 +171,7 @@ export function App() {
       <Button onClick={openWithGuard} disabled={!catalogue} busy={opening} title={t('app.openProjectHint')}>
         {t('app.openProject')}
       </Button>
-      <GameFolderDialog location={location} onChoose={choose} />
+      <GameFolderDialog location={location} onChoose={choose} onWhatsNew={() => setWhatsNew(ENTRIES)} />
     </>
   )
   const category = catalogue?.find((c) => c.id === selection?.categoryId)
@@ -204,6 +226,7 @@ export function App() {
           <p>{message?.lines[0]}</p>
         )}
       </ConfirmDialog>
+      {whatsNewDialog}
     </>
   )
 

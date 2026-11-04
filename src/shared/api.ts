@@ -73,6 +73,10 @@ export interface LmuApi {
   onUpdateReady(callback: (version: string) => void): () => void
   /** Closes the window (with the unsaved-changes question), then installs the update and starts the app again. */
   installUpdate(): void
+  /** The highest "What's new" entry id that the user saw. `latest` is the answer for a new install (ADR-0033). */
+  getWhatsNewSeen(latest: number): Promise<number>
+  /** Saves the highest "What's new" entry id that the user saw. */
+  setWhatsNewSeen(id: number): Promise<void>
 }
 
 export const IPC = {
@@ -89,7 +93,9 @@ export const IPC = {
   exportToFolder: 'export:folder',
   updateReady: 'update:ready',
   getReadyUpdate: 'update:get-ready',
-  installUpdate: 'update:install'
+  installUpdate: 'update:install',
+  getWhatsNewSeen: 'whats-new:get-seen',
+  setWhatsNewSeen: 'whats-new:set-seen'
 } as const
 
 /** Custom protocol for template files: `lmu-template://template/<file name>`. */

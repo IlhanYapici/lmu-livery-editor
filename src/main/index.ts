@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, net, protocol } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, net, protocol, shell } from 'electron'
 // A static import: electron-vite makes it a require(). With import(), `autoUpdater` (a getter) is undefined.
 // The updater object is made only when the code reads `autoUpdater`, so development builds load no updater.
 import { autoUpdater } from 'electron-updater'
@@ -18,7 +18,8 @@ import { checkGameTga, liveryFilesExist, writeLiveryFiles } from './liveryExport
 import { createI18n, isLanguage, languageForLocale, type Language } from '../shared/i18n'
 import { PROJECT_EXTENSION } from '../shared/project'
 import { displayName, ensureFolder, ProjectHandles, readProjectFile, writeAtomic } from './projectFiles'
-import { loadSettings, saveSettings } from './settings'
+import { isExternalLink } from './links'
+import { loadSettings, resolveWhatsNewSeen, saveSettings, settingsExist } from './settings'
 import { findLiveryTemplatesDir, locateGameDir, nodeHost } from './steam'
 import { resolveTemplateUrl } from './templateProtocol'
 import { scanTemplates } from './templates'
@@ -37,6 +38,8 @@ let installUpdate: (() => void) | null = null
 let readyUpdate: string | null = null
 
 const settingsFile = () => join(app.getPath('userData'), 'settings.json')
+/** No settings file when the app started: a new install (ADR-0033). Read before any setting is saved. */
+let firstRun = false
 
 /** Translations for the dialogs and messages of the main process (ADR-0024). */
 const i18n = createI18n('en')
@@ -51,6 +54,20 @@ async function setLanguage(language: unknown): Promise<void> {
   if (!isLanguage(language)) return
   await saveSettings(settingsFile(), { ...(await loadSettings(settingsFile())), language })
   await i18n.changeLanguage(language)
+}
+
+/** A new install saves `latest` at once: on the next start, its settings file exists. */
+async function getWhatsNewSeen(latest: unknown): Promise<number> {
+  const settings = await loadSettings(settingsFile())
+  const latestId = typeof latest === 'number' && Number.isInteger(latest) && latest >= 0 ? latest : 0
+  const seen = resolveWhatsNewSeen(settings.whatsNewSeen, firstRun, latestId)
+  if (settings.whatsNewSeen !== seen) await saveSettings(settingsFile(), { ...settings, whatsNewSeen: seen })
+  return seen
+}
+
+async function setWhatsNewSeen(id: unknown): Promise<void> {
+  if (typeof id !== 'number' || !Number.isInteger(id) || id < 0) return
+  await saveSettings(settingsFile(), { ...(await loadSettings(settingsFile())), whatsNewSeen: id })
 }
 
 async function locateGame(): Promise<GameLocation> {
@@ -278,6 +295,16 @@ function createWindow(): BrowserWindow {
   // Keep the title with the version: the page <title> must not replace it.
   window.on('page-title-updated', (event) => event.preventDefault())
   window.webContents.on('will-prevent-unload', (event) => confirmClose(window, event))
+  // A link never replaces the editor: https links open in the system browser, other links do nothing.
+  window.webContents.setWindowOpenHandler(({ url }) => {
+    if (isExternalLink(url)) void shell.openExternal(url)
+    return { action: 'deny' }
+  })
+  window.webContents.on('will-navigate', (event) => {
+    if (event.url === window.webContents.getURL()) return // A reload (development).
+    event.preventDefault()
+    if (isExternalLink(event.url)) void shell.openExternal(event.url)
+  })
 
   if (process.env.ELECTRON_RENDERER_URL) window.loadURL(process.env.ELECTRON_RENDERER_URL)
   else window.loadFile(join(__dirname, '../renderer/index.html'))
@@ -308,12 +335,15 @@ ipcMain.on(IPC.closeWindow, (event) => {
   BrowserWindow.fromWebContents(event.sender)?.close()
 })
 ipcMain.handle(IPC.getReadyUpdate, () => readyUpdate)
+ipcMain.handle(IPC.getWhatsNewSeen, (_event, latest: unknown) => getWhatsNewSeen(latest))
+ipcMain.handle(IPC.setWhatsNewSeen, (_event, id: unknown) => setWhatsNewSeen(id))
 ipcMain.on(IPC.installUpdate, (event) => {
   installRequest.request()
   BrowserWindow.fromWebContents(event.sender)?.close()
 })
 
 app.whenReady().then(async () => {
+  firstRun = !(await settingsExist(settingsFile()))
   await i18n.changeLanguage(await getLanguage())
   protocol.handle(TEMPLATE_PROTOCOL, serveTemplate)
   const window = createWindow()
