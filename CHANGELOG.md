@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0](https://github.com/IlhanYapici/lmu-livery-editor/compare/v0.4.0...v0.5.0) (2026-11-06)
+
+
+### Features
+
+* **editor:** gradient controls in the properties panel ([d041e16](https://github.com/IlhanYapici/lmu-livery-editor/commit/d041e167c32835366046d5ff37458ef6c37ce15d))
+* **editor:** gradient fills in the document and the export ([3db9529](https://github.com/IlhanYapici/lmu-livery-editor/commit/3db9529367ee907a8aaabd675913fdb806a90519))
+
 ## [0.4.0](https://github.com/IlhanYapici/lmu-livery-editor/compare/v0.3.0...v0.4.0) (2026-11-04)
 
 
