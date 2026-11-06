@@ -1,3 +1,7 @@
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
+import { decodeTga } from '../../src/shared/tga'
+import { AREA } from '../fixtures/templates'
 import { dragOnCanvas, expect, layerNames, openFerrari, test } from './fixtures'
 
 test('draws shapes, edits a field, undoes and redoes', async ({ app }) => {
@@ -41,4 +45,42 @@ test('imports an image and warns when it is enlarged too much', async ({ app }) 
   await width.fill('10')
   await width.press('Enter')
   await expect(page.getByRole('img', { name: /enlarged 5 times/ })).toHaveCount(2)
+})
+
+test('paints a linear gradient and exports it', async ({ app }) => {
+  const { page, folders } = app
+  await openFerrari(page)
+  await page.getByRole('button', { name: 'Add fill' }).click()
+  const panel = page.getByLabel('Layer properties')
+  await panel.getByRole('radio', { name: 'Linear' }).click()
+
+  // Top to bottom, red to green, both opaque. Not blue: the base paint of the synthetic template is blue.
+  const angle = panel.getByRole('spinbutton', { name: 'Angle °' })
+  await angle.fill('90')
+  await angle.press('Enter')
+  const colour = panel.getByRole('textbox', { name: 'Colour' })
+  for (const [stop, hex] of [
+    ['Stop 1, 0 %', 'ff0000'],
+    ['Stop 2, 100 %', '00ff00']
+  ]) {
+    await panel.getByRole('button', { name: stop }).click()
+    await colour.fill(hex)
+    await colour.press('Enter')
+    await panel.getByRole('slider', { name: /^Alpha/ }).focus()
+    await page.keyboard.press('End')
+  }
+  await expect(panel.getByText('Alpha 100 %')).toBeVisible()
+  await expect(panel.getByRole('button', { name: 'Stop 1, 0 %' })).toHaveCSS('background-color', 'rgb(255, 0, 0)')
+
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  await page.getByRole('alertdialog', { name: 'Export to the game' }).getByRole('button', { name: 'Export' }).click()
+  await expect(page.getByRole('alertdialog', { name: 'Livery exported' })).toBeVisible()
+
+  // A column that no template layer paints over. The template Levels change the values, not their order.
+  const { width, rgba } = decodeTga(new Uint8Array(await readFile(join(folders.liveries, 'customskin.tga'))))
+  const pixel = (x: number, y: number) => Array.from(rgba.subarray((y * width + x) * 4, (y * width + x) * 4 + 3))
+  const x = AREA.offCar.x + 1
+  const [top, bottom] = [pixel(x, 0), pixel(x, width - 1)]
+  expect(top[0]).toBeGreaterThan(Math.max(top[1], top[2]) + 100)
+  expect(bottom[1]).toBeGreaterThan(Math.max(bottom[0], bottom[2]) + 100)
 })

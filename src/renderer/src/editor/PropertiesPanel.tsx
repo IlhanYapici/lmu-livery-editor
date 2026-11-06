@@ -1,11 +1,13 @@
-import { Select, Slider } from 'radix-ui'
+import { Select, Slider, ToggleGroup } from 'radix-ui'
 import { useEffect, useState } from 'react'
 import { HexColorInput, HexColorPicker } from 'react-colorful'
 import { useTranslation } from 'react-i18next'
 import { WarningIcon } from '../components/WarningIcon'
 import { enlargement, isUpscaled } from './assets'
-import { FONTS, type Asset, type UserLayer } from './document'
+import { FONTS, type Asset, type Gradient, type UserLayer } from './document'
 import type { DocumentState } from './documentStore'
+import { addStop, clamp01, defaultGradient, normalAngle, removeStop, updateStop } from './gradient'
+import { GradientBar } from './GradientBar'
 import styles from './PropertiesPanel.module.css'
 
 type Props = Pick<DocumentState, 'updateLayer' | 'beginGesture' | 'endGesture'> & {
@@ -32,27 +34,12 @@ export function PropertiesPanel({ layer, table, asset, updateLayer, beginGesture
     <section className={styles.panel} aria-label={t('properties.label')}>
       <h3 className={styles.heading}>{layer.name}</h3>
 
-      {'color' in layer && (
-        <div className={styles.colorRow}>
-          <div onPointerDown={beginGesture}>
-            <HexColorPicker className={styles.picker} color={layer.color} onChange={(color) => update({ color })} />
-          </div>
-          <div className={styles.colorSide}>
-            <label className={styles.label}>
-              {t('properties.colour')}
-              <HexColorInput className={styles.input} color={layer.color} onChange={(color) => update({ color })} prefixed />
-            </label>
-            <div className={styles.swatches}>
-              <span className={styles.swatch} style={{ background: layer.color }} title={t('properties.yourColour')} />
-              <span
-                className={styles.swatch}
-                style={{ background: table ? gameColor(layer.color, table) : layer.color }}
-                title={t('properties.gameColour')}
-              />
-            </div>
-            <span className={styles.note}>{t('properties.colourNote')}</span>
-          </div>
-        </div>
+      {'gradient' in layer ? (
+        <Paint layer={layer} table={table} update={update} beginGesture={beginGesture} />
+      ) : (
+        'color' in layer && (
+          <ColorRow color={layer.color} table={table} onChange={(color) => update({ color })} beginGesture={beginGesture} />
+        )
       )}
 
       <label className={styles.label}>
@@ -176,6 +163,171 @@ export function PropertiesPanel({ layer, table, asset, updateLayer, beginGesture
         </>
       )}
     </section>
+  )
+}
+
+type Paintable = Extract<UserLayer, { gradient: unknown }>
+
+/**
+ * Solid colour or gradient (ADR-0034). With a gradient, the colour picker edits the selected stop. The layer
+ * colour stays as the solid colour, and is the colour of a new gradient.
+ */
+function Paint({
+  layer,
+  table,
+  update,
+  beginGesture
+}: {
+  layer: Paintable
+  table: Uint8Array | null
+  update: (patch: Partial<UserLayer>) => void
+  beginGesture: () => void
+}) {
+  const { t } = useTranslation()
+  const [selected, setSelected] = useState(0)
+  const gradient = layer.gradient
+  const index = gradient ? Math.min(selected, gradient.stops.length - 1) : 0
+  const stop = gradient?.stops[index]
+  const setGradient = (next: Gradient | null) => update({ gradient: next })
+
+  return (
+    <>
+      <div className={styles.label}>
+        {t('properties.paint')}
+        <ToggleGroup.Root
+          type="single"
+          className={styles.segments}
+          value={gradient?.type ?? 'solid'}
+          onValueChange={(v) => {
+            if (!v || v === (gradient?.type ?? 'solid')) return
+            setSelected(0)
+            setGradient(
+              v === 'solid'
+                ? null
+                : gradient
+                  ? { ...gradient, type: v as Gradient['type'] }
+                  : defaultGradient(v as Gradient['type'], layer.color)
+            )
+          }}
+          aria-label={t('properties.paint')}
+        >
+          {(['solid', 'linear', 'radial'] as const).map((v) => (
+            <ToggleGroup.Item key={v} value={v} className={styles.segment}>
+              {t(`properties.${v}`)}
+            </ToggleGroup.Item>
+          ))}
+        </ToggleGroup.Root>
+      </div>
+
+      {gradient && stop ? (
+        <>
+          <GradientBar
+            gradient={gradient}
+            selected={index}
+            onSelect={setSelected}
+            onDragStart={beginGesture}
+            onMove={(i, offset) => setGradient(updateStop(gradient, i, { offset }))}
+            onAdd={(offset) => {
+              const added = addStop(gradient, offset)
+              if (!added) return
+              setGradient(added.gradient)
+              setSelected(added.index)
+            }}
+            onRemove={(i) => {
+              setGradient(removeStop(gradient, i))
+              setSelected(0)
+            }}
+          />
+          <ColorRow
+            color={stop.color}
+            table={table}
+            onChange={(color) => setGradient(updateStop(gradient, index, { color }))}
+            beginGesture={beginGesture}
+          />
+          <div className={styles.grid}>
+            <NumberField
+              label={t('properties.stopPosition')}
+              value={Math.round(stop.offset * 1000) / 10}
+              onCommit={(v) => setGradient(updateStop(gradient, index, { offset: clamp01(v / 100) }))}
+            />
+            {gradient.type === 'linear' && (
+              <NumberField
+                label={t('properties.angle')}
+                value={gradient.angle}
+                onCommit={(v) => setGradient({ ...gradient, angle: normalAngle(v) })}
+              />
+            )}
+            <button
+              type="button"
+              className={styles.removeStop}
+              disabled={gradient.stops.length <= 2}
+              onClick={() => {
+                setGradient(removeStop(gradient, index))
+                setSelected(0)
+              }}
+            >
+              {t('properties.removeStop')}
+            </button>
+          </div>
+          <label className={styles.label}>
+            {t('properties.stopAlpha', { value: Math.round(stop.alpha * 100) })}
+            <Slider.Root
+              className={styles.slider}
+              min={0}
+              max={100}
+              step={1}
+              value={[Math.round(stop.alpha * 100)]}
+              onPointerDown={beginGesture}
+              onValueChange={([v]) => setGradient(updateStop(gradient, index, { alpha: v / 100 }))}
+            >
+              <Slider.Track className={styles.track}>
+                <Slider.Range className={styles.range} />
+              </Slider.Track>
+              <Slider.Thumb className={styles.thumb} aria-label={t('properties.stopAlpha', { value: Math.round(stop.alpha * 100) })} />
+            </Slider.Root>
+          </label>
+        </>
+      ) : (
+        <ColorRow color={layer.color} table={table} onChange={(color) => update({ color })} beginGesture={beginGesture} />
+      )}
+    </>
+  )
+}
+
+/** The colour picker, the hex field, and the colour as the game shows it. */
+function ColorRow({
+  color,
+  table,
+  onChange,
+  beginGesture
+}: {
+  color: string
+  table: Uint8Array | null
+  onChange: (color: string) => void
+  beginGesture: () => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <div className={styles.colorRow}>
+      <div onPointerDown={beginGesture}>
+        <HexColorPicker className={styles.picker} color={color} onChange={onChange} />
+      </div>
+      <div className={styles.colorSide}>
+        <label className={styles.label}>
+          {t('properties.colour')}
+          <HexColorInput className={styles.input} color={color} onChange={onChange} prefixed />
+        </label>
+        <div className={styles.swatches}>
+          <span className={styles.swatch} style={{ background: color }} title={t('properties.yourColour')} />
+          <span
+            className={styles.swatch}
+            style={{ background: table ? gameColor(color, table) : color }}
+            title={t('properties.gameColour')}
+          />
+        </div>
+        <span className={styles.note}>{t('properties.colourNote')}</span>
+      </div>
+    </div>
   )
 }
 
