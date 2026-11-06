@@ -187,7 +187,17 @@
     "outlineColour": "Couleur du contour",
     "outlineWidth": "Épaisseur du contour",
     "source": "Image source : {{width}} × {{height}} px",
-    "upscaled": "L'image est agrandie {{factor}} fois : elle peut paraître floue en jeu. Utilisez une image plus grande ou un SVG."
+    "upscaled": "L'image est agrandie {{factor}} fois : elle peut paraître floue en jeu. Utilisez une image plus grande ou un SVG.",
+    "paint": "Peinture",
+    "solid": "Unie",
+    "linear": "Linéaire",
+    "radial": "Radiale",
+    "angle": "Angle °",
+    "stopPosition": "Position %",
+    "stopAlpha": "Opacité du point {{value}} %",
+    "stop": "Point {{n}}, {{value}} %",
+    "addStopHint": "Cliquez sur la barre pour ajouter un point",
+    "removeStop": "Supprimer le point"
   },
   "template": {
     "hint": "Vos calques restent sous les niveaux du modèle, pour que la plage de couleurs du jeu s'applique.",

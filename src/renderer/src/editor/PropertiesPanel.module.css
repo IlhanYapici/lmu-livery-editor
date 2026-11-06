@@ -153,3 +153,48 @@
   background: rgb(240 140 0 / 10%);
   font-size: 13px;
 }
+
+.segments {
+  display: flex;
+}
+
+.segment {
+  flex: 1;
+  height: 32px;
+  background: var(--color-field);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.segment + .segment {
+  border-left: 0;
+}
+
+.segment:hover {
+  color: var(--color-text);
+}
+
+.segment[data-state='on'] {
+  background: var(--color-row-selected);
+  color: var(--color-text);
+  box-shadow: inset 0 -2px 0 var(--color-brand);
+}
+
+.removeStop {
+  align-self: end;
+  height: 32px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.removeStop:disabled {
+  color: var(--color-text-muted);
+  cursor: default;
+}

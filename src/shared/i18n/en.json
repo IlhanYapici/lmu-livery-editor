@@ -187,7 +187,17 @@
     "outlineColour": "Outline colour",
     "outlineWidth": "Outline width",
     "source": "Source image: {{width}} × {{height}} px",
-    "upscaled": "The image is enlarged {{factor}} times: it can look blurred in game. Use a larger image or an SVG."
+    "upscaled": "The image is enlarged {{factor}} times: it can look blurred in game. Use a larger image or an SVG.",
+    "paint": "Paint",
+    "solid": "Solid",
+    "linear": "Linear",
+    "radial": "Radial",
+    "angle": "Angle °",
+    "stopPosition": "Position %",
+    "stopAlpha": "Alpha {{value}} %",
+    "stop": "Stop {{n}}, {{value}} %",
+    "addStopHint": "Click the bar to add a stop",
+    "removeStop": "Remove stop"
   },
   "template": {
     "hint": "Your layers stay below the Levels of the template, so the game colour range applies to them.",
