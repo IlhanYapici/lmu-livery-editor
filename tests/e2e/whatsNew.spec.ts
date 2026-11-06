@@ -1,10 +1,14 @@
-import { readdirSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { expect, test } from './fixtures'
 
 // "What's new" (ADR-0033). The real entries of src/renderer/whats-new are in the build.
-const latest = Math.max(...readdirSync(resolve(__dirname, '../../src/renderer/whats-new')).map((name) => Number(name.slice(0, 4))))
+const folder = resolve(__dirname, '../../src/renderer/whats-new')
+const latestFolder = readdirSync(folder).sort().at(-1)!
+const latest = Number(latestFolder.slice(0, 4))
+/** The "## Title" of the latest entry in French: the test must not change for each new entry. */
+const latestFrenchTitle = readFileSync(join(folder, latestFolder, 'fr.md'), 'utf8').match(/^## (.+)$/m)![1]
 const savedSeen = async (userData: string) => JSON.parse(await readFile(join(userData, 'settings.json'), 'utf8')).whatsNewSeen
 
 test.describe('new install', () => {
@@ -45,7 +49,7 @@ test.describe('update with one new entry', () => {
     const dialog = app.page.getByRole('dialog', { name: 'Nouveautés' })
     await expect(dialog).toBeVisible()
     await expect(dialog.getByRole('article')).toHaveCount(1)
-    await expect(dialog.getByRole('article').getByRole('heading', { level: 2, name: 'Nouveautés' })).toBeVisible()
+    await expect(dialog.getByRole('article').getByRole('heading', { level: 2, name: latestFrenchTitle })).toBeVisible()
     await dialog.getByRole('button', { name: 'OK' }).press('Escape')
     await expect(dialog).toBeHidden()
     await expect.poll(() => savedSeen(app.folders.userData)).toBe(latest)
